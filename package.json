@@ -9,7 +9,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "sandbox:server": "node tools/sandbox/server.mjs",
-    "test:codegen": "vitest run tools/sandbox"
+    "test:codegen": "vitest run tools/sandbox",
+    "test:devtools": "vitest run src/app/sandboxes/devtools"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
