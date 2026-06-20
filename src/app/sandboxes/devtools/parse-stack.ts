@@ -32,11 +32,13 @@ function parseSpider(line: string): StackFrame | null {
   return null;
 }
 
+// Matched against frame FILE paths only — never against function names, which
+// can legitimately contain these substrings (e.g. a user's `getVendorData`).
 const INTERNAL_RE = /node_modules|zone\.js|polyfills|console-capture|sandbox-log|@angular|vendor/;
 
 /** Pick the first application frame and format it as a short source label. */
 export function pickSource(frames: StackFrame[]): string {
-  const app = frames.find((f) => f.file && !INTERNAL_RE.test(f.file) && !INTERNAL_RE.test(f.fn));
+  const app = frames.find((f) => f.file && !INTERNAL_RE.test(f.file));
   const f = app ?? frames[0];
   if (!f) return '(unknown)';
   const file = shortFile(f.file);
