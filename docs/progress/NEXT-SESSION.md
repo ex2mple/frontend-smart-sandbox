@@ -19,10 +19,14 @@ Everything below is committed; build + unit tests are green.
 
 ## What's left
 
-1. **Manual / live QA of the log console** (highest priority — not yet done). `npm start`, open `/s/<something>`, verify: FAB appears; logs show level/time/source/expandable object; level filter + search + clear + copy + export work; row expands to stack; an uncaught error lands once (not doubled); dock absent on dashboard; native console still receives output. Use the `parallel-agent-qa` skill against the live stack.
-2. **Monaco editor + live preview** — `GET/PUT /sandbox-api/files/:name` + lazy Monaco in a `/s/:name/edit` split-pane with `<iframe>` preview. Editor *intelligence* (TS/Angular LS) is explicitly out of scope for v1.
-3. **`create` cleanup-on-failure** — remove a partially-written sandbox folder on error (can leave an `EISDIR`-triggering partial dir). See `architecture-and-gotchas`.
-4. **First deep visualizer sandbox** (render tree / DI tree / event loop) per the project vision.
+1. **Monaco editor + live preview** — `GET/PUT /sandbox-api/files/:name` + lazy Monaco in a `/s/:name/edit` split-pane with `<iframe>` preview. Editor *intelligence* (TS/Angular LS) is explicitly out of scope for v1.
+2. **`create` cleanup-on-failure** — remove a partially-written sandbox folder on error (can leave an `EISDIR`-triggering partial dir). See `architecture-and-gotchas`.
+3. **First deep visualizer sandbox** (render tree / DI tree / event loop) per the project vision.
+
+## Recently done
+
+- **Live QA of the dev log console — DONE 2026-06-20, all 13 browser checks PASS, no defects.** Evidence in [`qa-log-console.md`](qa-log-console.md). The feature (FAB + count badge, level filter, search, row→stack expand, object inspector, Copy/Export/Clear, single uncaught-error record, native passthrough, absent on dashboard) is verified end-to-end and considered complete.
+  - **QA env note:** a stale companion server left on :4300 from a prior session makes `npm start` fail with `EADDRINUSE` and (via `concurrently -k`) kills `ng serve`; it can also leave `sandbox.routes.generated.ts` as `[]` so `/s/<name>` 404s. Before QA: kill leftover node on :4200/:4300, restart `npm start`, and confirm the routes file repopulated with real `loadChildren` entries.
 
 ## How to work here (standing agreements)
 

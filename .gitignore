@@ -45,3 +45,6 @@ Thumbs.db
 
 # Generated (throwaway) sandboxes
 /src/app/sandboxes/generated/
+
+# Playwright MCP QA artifacts (screenshots/downloads)
+.playwright-mcp/
