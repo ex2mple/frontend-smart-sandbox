@@ -1,0 +1,80 @@
+<!-- src/app/sandboxes/devtools/sandbox-console.html -->
+@if (!open()) {
+  <button type="button" class="sbc-fab" (click)="toggleOpen()" aria-label="Open log console">
+    Console
+    @if (count() > 0) {
+      <span class="sbc-fab__count">{{ count() }}</span>
+    }
+  </button>
+} @else {
+  <section class="sbc" role="complementary" aria-label="Sandbox log console">
+    <header class="sbc__bar">
+      <div class="sbc__levels" role="group" aria-label="Filter by level">
+        @for (lvl of levels; track lvl) {
+          <button
+            type="button"
+            class="sbc__chip"
+            [class.sbc__chip--on]="isLevelActive(lvl)"
+            [attr.aria-pressed]="isLevelActive(lvl)"
+            (click)="toggleLevel(lvl)"
+          >
+            {{ lvl }}
+          </button>
+        }
+      </div>
+
+      <input
+        class="sbc__search"
+        type="search"
+        [value]="query()"
+        (input)="query.set($any($event.target).value)"
+        placeholder="Filter…"
+        aria-label="Filter logs by text"
+      />
+
+      <label class="sbc__autoscroll">
+        <input
+          type="checkbox"
+          [checked]="autoscroll()"
+          (change)="autoscroll.set($any($event.target).checked)"
+        />
+        Autoscroll
+      </label>
+
+      <button type="button" class="sbc__btn" (click)="copyAll()" aria-label="Copy logs">Copy</button>
+      <button type="button" class="sbc__btn" (click)="export()" aria-label="Export logs">Export</button>
+      <button type="button" class="sbc__btn" (click)="clear()" aria-label="Clear logs">Clear</button>
+      <button type="button" class="sbc__btn" (click)="toggleOpen()" aria-label="Close log console">✕</button>
+    </header>
+
+    <ol class="sbc__list" #list role="log" aria-live="polite">
+      @for (e of filtered(); track e.id) {
+        <li class="sbc__entry sbc__entry--{{ e.level }}">
+          <button type="button" class="sbc__row" (click)="toggleRow(e.id)" [attr.aria-expanded]="isRowExpanded(e.id)">
+            <span class="sbc__level">{{ e.level }}</span>
+            <span class="sbc__time">{{ formatTime(e.time) }}</span>
+            <span class="sbc__source">{{ e.source }}</span>
+            <span class="sbc__msg">
+              @for (v of e.values; track $index) {
+                <app-log-value-tree [value]="v" />
+              }
+            </span>
+          </button>
+
+          @if (isRowExpanded(e.id)) {
+            <div class="sbc__detail">
+              <h4 class="sbc__detail-title">Stack</h4>
+              <ul class="sbc__frames">
+                @for (f of e.frames; track $index) {
+                  <li class="sbc__frame">{{ f.fn }} <span class="sbc__frame-loc">{{ f.file }}:{{ f.line }}:{{ f.col }}</span></li>
+                }
+              </ul>
+            </div>
+          }
+        </li>
+      } @empty {
+        <li class="sbc__empty">No logs match.</li>
+      }
+    </ol>
+  </section>
+}
