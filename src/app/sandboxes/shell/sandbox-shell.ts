@@ -1,16 +1,18 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+// src/app/sandboxes/shell/sandbox-shell.ts
+import { ChangeDetectionStrategy, Component, isDevMode } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
+import { SandboxConsole } from '../devtools/sandbox-console';
 
 /**
  * Chrome wrapping every `/s/*` sandbox route. Provides a persistent
- * "back to dashboard" affordance so a sandbox is never a dead end, and a
+ * "back to dashboard" affordance so a sandbox is never a dead end, a
  * full-height content area so a sandbox's `min-height: 100%` fills the
- * viewport below the bar. The sandbox renders into the <router-outlet/>.
+ * viewport below the bar, and (in dev) the in-app log console.
  */
 @Component({
   selector: 'app-sandbox-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterOutlet],
+  imports: [RouterLink, RouterOutlet, SandboxConsole],
   template: `
     <nav class="sb-shell-bar" aria-label="Sandbox navigation">
       <a class="sb-shell-bar__back" routerLink="/">
@@ -21,6 +23,9 @@ import { RouterLink, RouterOutlet } from '@angular/router';
     <div class="sb-shell-content">
       <router-outlet />
     </div>
+    @if (isDev) {
+      <app-sandbox-console />
+    }
   `,
   styles: `
     :host {
@@ -74,4 +79,6 @@ import { RouterLink, RouterOutlet } from '@angular/router';
     }
   `,
 })
-export class SandboxShell {}
+export class SandboxShell {
+  protected readonly isDev = isDevMode();
+}
