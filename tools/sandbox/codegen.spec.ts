@@ -122,20 +122,32 @@ describe('buildRoutesFile', () => {
     const result = buildRoutesFile([{ name: 'my-test', kind: 'generated' }]);
     expect(result).toBe(
       `import { Routes } from '@angular/router';\n\nexport const generatedSandboxRoutes: Routes = [\n` +
-        `  { path: 's/my-test', loadComponent: () => import('./generated/my-test/my-test').then((m) => m.MyTest) },\n` +
+        `  { path: 's/my-test', loadChildren: () => import('./generated/my-test/my-test.routes').then((m) => m.routes) },\n` +
         `];\n`,
     );
   });
 
   it('uses saved directory for kind=saved', () => {
     const result = buildRoutesFile([{ name: 'event-loop', kind: 'saved' }]);
-    expect(result).toContain(`import('./saved/event-loop/event-loop')`);
-    expect(result).toContain(`m.EventLoop`);
+    expect(result).toContain(`import('./saved/event-loop/event-loop.routes')`);
+    expect(result).toContain(`m.routes`);
   });
 
-  it('derives class name correctly from name', () => {
+  it('emits loadChildren with <name>.routes for a saved sandbox', () => {
+    const result = buildRoutesFile([{ name: 'foo', kind: 'saved' }]);
+    expect(result).toBe(
+      `import { Routes } from '@angular/router';\n\nexport const generatedSandboxRoutes: Routes = [\n` +
+        `  { path: 's/foo', loadChildren: () => import('./saved/foo/foo.routes').then((m) => m.routes) },\n` +
+        `];\n`,
+    );
+  });
+
+  it('uses loadChildren resolving m.routes (not a class name) for any entry', () => {
     const result = buildRoutesFile([{ name: 'foo-bar', kind: 'generated' }]);
-    expect(result).toContain(`m.FooBar`);
+    expect(result).toContain(`loadChildren`);
+    expect(result).toContain(`foo-bar.routes`);
+    expect(result).toContain(`m.routes`);
+    expect(result).not.toContain(`loadComponent`);
   });
 
   it('produces correct output for two entries', () => {
@@ -145,8 +157,8 @@ describe('buildRoutesFile', () => {
     ]);
     expect(result).toBe(
       `import { Routes } from '@angular/router';\n\nexport const generatedSandboxRoutes: Routes = [\n` +
-        `  { path: 's/my-test', loadComponent: () => import('./generated/my-test/my-test').then((m) => m.MyTest) },\n` +
-        `  { path: 's/event-loop', loadComponent: () => import('./saved/event-loop/event-loop').then((m) => m.EventLoop) },\n` +
+        `  { path: 's/my-test', loadChildren: () => import('./generated/my-test/my-test.routes').then((m) => m.routes) },\n` +
+        `  { path: 's/event-loop', loadChildren: () => import('./saved/event-loop/event-loop.routes').then((m) => m.routes) },\n` +
         `];\n`,
     );
   });

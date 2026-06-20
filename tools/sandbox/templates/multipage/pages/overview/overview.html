@@ -1,0 +1,16 @@
+<article class="sb-page">
+  <header class="sb-page__header sb-page__header--overview">
+    <div class="sb-page__icon" aria-hidden="true">&#127968;</div>
+    <h2>Overview</h2>
+  </header>
+  <p class="sb-page__body">
+    Welcome to the <strong>{{title}}</strong> sandbox. This is the overview page.
+    Use the navigation above to switch between pages and observe the cross-page
+    transition powered by Angular's View Transitions API.
+  </p>
+  <div class="sb-page__footer">
+    <button type="button" class="sb-btn" (click)="recordVisit()">
+      Record visit ({{ visits() }})
+    </button>
+  </div>
+</article>

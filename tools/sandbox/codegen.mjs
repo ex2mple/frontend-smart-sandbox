@@ -73,8 +73,7 @@ export function buildRoutesFile(sandboxes) {
 
   const lines = sandboxes.map(({ name, kind }) => {
     const dir = kind === 'generated' ? 'generated' : 'saved';
-    const className = kebabToClassName(name);
-    return `  { path: 's/${name}', loadComponent: () => import('./${dir}/${name}/${name}').then((m) => m.${className}) },`;
+    return `  { path: 's/${name}', loadChildren: () => import('./${dir}/${name}/${name}.routes').then((m) => m.routes) },`;
   });
 
   return `${header}[\n${lines.join('\n')}\n];\n`;

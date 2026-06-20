@@ -1,6 +1,28 @@
-<main>
+<main class="sb-card">
   <h1>{{title}}</h1>
-  <p>count is {{ count() }}</p>
-  <p>doubled is {{ doubled() }}</p>
-  <button type="button" (click)="increment()">Increment</button>
+  <p class="sb-muted">An example sandbox showing signals, computed values, and inputs.</p>
+
+  <dl class="sb-stats">
+    <div class="sb-stat">
+      <dt>Count</dt>
+      <dd>{{ count() }}</dd>
+    </div>
+    <div class="sb-stat">
+      <dt>Doubled</dt>
+      <dd>{{ doubled() }}</dd>
+    </div>
+    <div class="sb-stat">
+      <dt>Step</dt>
+      <dd>{{ step() }}</dd>
+    </div>
+  </dl>
+
+  <div class="sb-actions">
+    <button type="button" class="sb-btn" (click)="increment()">
+      + Increment by {{ step() }}
+    </button>
+    <button type="button" class="sb-btn sb-btn--secondary" (click)="reset()">
+      Reset
+    </button>
+  </div>
 </main>

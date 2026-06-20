@@ -1,0 +1,27 @@
+<article class="sb-page">
+  <header class="sb-page__header sb-page__header--details">
+    <div class="sb-page__icon" aria-hidden="true">&#128203;</div>
+    <h2>Details</h2>
+  </header>
+  <p class="sb-page__body">
+    This is the <strong>details page</strong> of the <strong>{{title}}</strong> sandbox.
+    It demonstrates distinct content across pages. Navigate back to Overview and
+    watch the View Transitions cross-fade.
+  </p>
+  <div class="sb-page__meta">
+    <h3>Rate this sandbox</h3>
+    <div class="sb-rating" role="group" aria-label="Rating">
+      @for (filled of stars(); track $index) {
+        <button
+          type="button"
+          class="sb-rating__star"
+          [class.sb-rating__star--filled]="filled"
+          (click)="setRating($index + 1)"
+          [attr.aria-label]="'Rate ' + ($index + 1) + ' out of 5'"
+          [attr.aria-pressed]="filled"
+        >★</button>
+      }
+    </div>
+    <p class="sb-rating__label">{{ rating() }} / 5 stars</p>
+  </div>
+</article>

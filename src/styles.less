@@ -1,1 +1,58 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles — design-token system */
+
+:root {
+  /* Typography */
+  --sb-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --sb-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Surfaces */
+  --sb-bg: #f6f7f9;
+  --sb-surface: #ffffff;
+  --sb-surface-2: #f0f2f5;
+  --sb-border: #e2e5ea;
+
+  /* Text */
+  --sb-text: #1b1f29;
+  --sb-text-muted: #5b6472;
+
+  /* Accent (indigo) */
+  --sb-accent: #4f46e5;
+  --sb-accent-hover: #4338ca;
+  --sb-accent-contrast: #ffffff;
+
+  /* Feedback */
+  --sb-danger: #c62828;
+  --sb-danger-hover: #a31515;
+  --sb-success: #047857;
+
+  /* Shape & depth */
+  --sb-radius: 12px;
+  --sb-radius-sm: 8px;
+  --sb-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 20px rgba(16, 24, 40, 0.06);
+  --sb-ring: 0 0 0 3px rgba(79, 70, 229, 0.35);
+
+  /* Spacing scale */
+  --sb-space-1: 0.25rem;
+  --sb-space-2: 0.5rem;
+  --sb-space-3: 0.75rem;
+  --sb-space-4: 1rem;
+  --sb-space-6: 1.5rem;
+  --sb-space-8: 2rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  font-family: var(--sb-font-sans);
+  background: var(--sb-bg);
+  color: var(--sb-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}

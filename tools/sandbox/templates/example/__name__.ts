@@ -14,4 +14,8 @@ export class {{className}} {
   protected increment(): void {
     this.count.update((n) => n + this.step());
   }
+
+  protected reset(): void {
+    this.count.set(0);
+  }
 }

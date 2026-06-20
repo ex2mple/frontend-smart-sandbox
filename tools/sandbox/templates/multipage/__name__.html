@@ -1,0 +1,25 @@
+<!-- Cross-page transitions use Angular's withViewTransitions() configured globally by the host app. No extra template code needed — navigating between pages cross-fades automatically via the browser View Transitions API. -->
+<div class="sb-shell">
+  <header class="sb-header">
+    <span class="sb-header__title">{{title}}</span>
+  </header>
+
+  <nav class="sb-nav" aria-label="{{title}} sections">
+    <a
+      routerLink="overview"
+      routerLinkActive="sb-nav__link--active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="sb-nav__link"
+    >Overview</a>
+    <a
+      routerLink="details"
+      routerLinkActive="sb-nav__link--active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="sb-nav__link"
+    >Details</a>
+  </nav>
+
+  <main class="sb-content">
+    <router-outlet />
+  </main>
+</div>

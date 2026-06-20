@@ -186,6 +186,43 @@ async function listTemplateIds() {
 }
 
 // ---------------------------------------------------------------------------
+// Recursive template copy
+// ---------------------------------------------------------------------------
+
+/**
+ * Recursively copy a template directory tree to a destination directory,
+ * substituting `__name__` in path segments and rendering template variables
+ * in file contents.
+ *
+ * @param {string} srcDir - absolute path to the template source directory
+ * @param {string} destDir - absolute path to the output root (generatedTarget)
+ * @param {string} name - the sandbox name (replaces `__name__` in path segments)
+ * @param {{ name: string, className: string, selector: string, title: string }} vars - template variables
+ */
+async function copyTemplateTree(srcDir, destDir, name, vars) {
+  const entries = await fs.readdir(srcDir, { withFileTypes: true });
+  await Promise.all(
+    entries.map(async (entry) => {
+      const srcPath = path.join(srcDir, entry.name);
+      const outSegment = entry.name.replace(/__name__/g, name);
+      const outPath = path.join(destDir, outSegment);
+
+      if (entry.isDirectory()) {
+        // Recurse: pass the mapped subdirectory as the new destDir
+        await copyTemplateTree(srcPath, outPath, name, vars);
+      } else {
+        // Security: output must be within the original generatedTarget (destDir's root)
+        assertUnderRoot(outPath, destDir);
+        await fs.mkdir(path.dirname(outPath), { recursive: true });
+        const templateContent = await fs.readFile(srcPath, 'utf8');
+        const rendered = renderTemplate(templateContent, vars);
+        await fs.writeFile(outPath, rendered, 'utf8');
+      }
+    }),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Security: safe path resolution
 // ---------------------------------------------------------------------------
 
@@ -304,24 +341,13 @@ async function handleRequest(req, res) {
       // Create the component directory
       await fs.mkdir(generatedTarget, { recursive: true });
 
-      // Render and write template files
+      // Render and write template files (recursive — handles subdirectories)
       const templateDir = path.join(TEMPLATES_DIR, template);
-      const templateFiles = await fs.readdir(templateDir);
       const className = kebabToClassName(name);
       const selector = selectorFor(name);
       const vars = { name, className, selector, title };
 
-      await Promise.all(
-        templateFiles.map(async (templateFile) => {
-          const outputFilename = templateFile.replace(/__name__/g, name);
-          const outputPath = path.join(generatedTarget, outputFilename);
-          // Security: output must be within generatedTarget
-          assertUnderRoot(outputPath, generatedTarget);
-          const templateContent = await fs.readFile(path.join(templateDir, templateFile), 'utf8');
-          const rendered = renderTemplate(templateContent, vars);
-          await fs.writeFile(outputPath, rendered, 'utf8');
-        }),
-      );
+      await copyTemplateTree(templateDir, generatedTarget, name, vars);
 
       // Write meta.json
       const meta = {

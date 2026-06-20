@@ -1,32 +1,57 @@
 :host {
-  display: block;
-  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: var(--sb-space-8);
+  background: var(--sb-bg);
+  font-family: var(--sb-font-sans);
 }
 
-h1 {
-  margin-bottom: 1rem;
-  font-size: 1.75rem;
+.sb-card {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
+  box-shadow: var(--sb-shadow);
+  padding: var(--sb-space-8);
+  max-width: 28rem;
+  width: 100%;
+  text-align: center;
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--sb-text);
+    margin-bottom: var(--sb-space-3);
+  }
 }
 
-p {
-  margin-bottom: 1.5rem;
-  color: #555;
+.sb-muted {
+  color: var(--sb-text-muted);
+  margin-bottom: var(--sb-space-6);
 }
 
-button {
-  padding: 0.5rem 1.25rem;
+.sb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sb-space-2);
+  padding: var(--sb-space-3) var(--sb-space-6);
+  background: var(--sb-accent);
+  color: var(--sb-accent-contrast);
+  border: none;
+  border-radius: var(--sb-radius-sm);
+  font-family: var(--sb-font-sans);
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #f5f5f5;
+  transition: background 0.15s;
 
   &:hover {
-    background-color: #e0e0e0;
+    background: var(--sb-accent-hover);
   }
 
   &:focus-visible {
-    outline: 2px solid #0066cc;
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: var(--sb-ring);
   }
 }
