@@ -34,8 +34,13 @@ export function buildEntry(
 }
 
 /**
- * Patch console.* and window error events to feed the store.
- * Dev-only, idempotent across HMR. Returns an uninstall fn.
+ * Patch console.* to feed the store. Dev-only, idempotent across HMR.
+ * Returns an uninstall fn.
+ *
+ * Uncaught errors / rejections are NOT listened to here on purpose: Angular's
+ * `provideBrowserGlobalErrorListeners()` already routes them to the default
+ * ErrorHandler, which calls `console.error` — captured by the patch below.
+ * Adding our own window listeners would double-record every error.
  */
 export function installConsoleCapture(store: LogStore): () => void {
   const c = console as unknown as Record<string, unknown>;
@@ -49,10 +54,13 @@ export function installConsoleCapture(store: LogStore): () => void {
     const original = con[method].bind(console);
     originals.set(method, original);
     con[method] = (...args: unknown[]) => {
-      original(...args);
-      if (capturing) return;
+      if (capturing) {
+        original(...args);
+        return;
+      }
       capturing = true;
       try {
+        original(...args);
         store.add(buildEntry(level, 'console', args));
       } catch {
         /* never break console */
@@ -62,28 +70,9 @@ export function installConsoleCapture(store: LogStore): () => void {
     };
   }
 
-  const onError = (event: ErrorEvent) => {
-    try {
-      store.add(buildEntry('error', 'error', [event.error ?? event.message]));
-    } catch {
-      /* ignore */
-    }
-  };
-  const onRejection = (event: PromiseRejectionEvent) => {
-    try {
-      store.add(buildEntry('error', 'error', [event.reason]));
-    } catch {
-      /* ignore */
-    }
-  };
-  window.addEventListener('error', onError);
-  window.addEventListener('unhandledrejection', onRejection);
-
   c[SENTINEL] = true;
   return () => {
     for (const { method } of METHODS) con[method] = originals.get(method)!;
-    window.removeEventListener('error', onError);
-    window.removeEventListener('unhandledrejection', onRejection);
     delete c[SENTINEL];
   };
 }
