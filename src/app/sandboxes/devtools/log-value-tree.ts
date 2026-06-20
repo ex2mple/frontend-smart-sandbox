@@ -1,10 +1,11 @@
 // src/app/sandboxes/devtools/log-value-tree.ts
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { LogValue } from './log-entry';
 
 @Component({
   selector: 'app-log-value-tree',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [LogValueTree],
   template: `
     @let v = value();
     @if (v.kind === 'array' || v.kind === 'object') {
@@ -90,9 +91,4 @@ import { LogValue } from './log-entry';
 export class LogValueTree {
   readonly value = input.required<LogValue>();
   protected readonly open = signal(false);
-  // computed kept for potential future auto-open heuristics
-  protected readonly expandable = computed(() => {
-    const v = this.value();
-    return v.kind === 'array' || v.kind === 'object';
-  });
 }

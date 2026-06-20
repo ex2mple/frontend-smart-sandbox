@@ -1,5 +1,14 @@
 // src/app/sandboxes/devtools/sandbox-console.ts
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { LogEntry, LogLevel } from './log-entry';
 import { LogStore } from './log-store';
 import { LogValueTree } from './log-value-tree';
@@ -25,6 +34,21 @@ export class SandboxConsole {
 
   protected readonly entries = this.store.entries;
   protected readonly count = computed(() => this.entries().length);
+
+  private readonly listRef = viewChild<ElementRef<HTMLElement>>('list');
+
+  constructor() {
+    // Keep the list pinned to the newest entry when autoscroll is on.
+    effect(() => {
+      const entries = this.filtered();
+      if (!this.autoscroll() || entries.length === 0) return;
+      const el = this.listRef()?.nativeElement;
+      if (!el) return;
+      requestAnimationFrame(() => {
+        el.scrollTop = el.scrollHeight;
+      });
+    });
+  }
 
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
