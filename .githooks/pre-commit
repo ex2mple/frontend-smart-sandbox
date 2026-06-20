@@ -1,0 +1,17 @@
+#!/bin/sh
+# Safety net: never let the machine-rewritten generated routes file into a commit.
+# It is committed as `[]`; the companion server rewrites it locally to reference
+# git-ignored folders. Committing that breaks a fresh clone's build.
+#
+# Normally `git update-index --skip-worktree` (set by `npm install` via
+# tools/sandbox/protect-generated-routes.mjs) keeps it out of the index entirely.
+# This hook covers the gap before the first `npm install` and on CI.
+FILE="src/app/sandboxes/sandbox.routes.generated.ts"
+
+if git diff --cached --name-only | grep -qx "$FILE"; then
+  echo "pre-commit: unstaging $FILE (must stay committed as [] — see tools/sandbox/protect-generated-routes.mjs)"
+  # Drop it from the index without touching the working tree or the running dev server.
+  git restore --staged "$FILE" 2>/dev/null || git reset -q HEAD "$FILE"
+fi
+
+exit 0

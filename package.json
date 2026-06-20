@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "concurrently -k -n server,ng -c blue,green \"node tools/sandbox/server.mjs\" \"ng serve\"",
     "build": "ng build",
+    "postinstall": "node tools/sandbox/protect-generated-routes.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "sandbox:server": "node tools/sandbox/server.mjs",
