@@ -1,0 +1,239 @@
+<main class="dashboard">
+  <h1>Frontend Smart Sandbox</h1>
+
+  <!-- Global error alert -->
+  @if (error()) {
+    <div class="alert alert--error" role="alert" aria-live="assertive">
+      <strong>Error:</strong> {{ error() }}
+      <button class="alert__dismiss" type="button" (click)="error.set(null)" aria-label="Dismiss error">✕</button>
+    </div>
+  }
+
+  <!-- Success panel -->
+  @if (lastCreated()) {
+    <div class="success-panel" role="status" aria-live="polite">
+      <p class="success-panel__msg">
+        Sandbox <strong>{{ lastCreated()!.name }}</strong> created successfully.
+      </p>
+      <a class="success-panel__link" [routerLink]="[lastCreated()!.routePath]">
+        Open {{ lastCreated()!.name }}
+      </a>
+      <p class="success-panel__hint">
+        The new route becomes available after the dev server reloads (~1 s).
+      </p>
+    </div>
+  }
+
+  <!-- Create sandbox form -->
+  <section class="card" aria-labelledby="create-heading">
+    <h2 id="create-heading">Create sandbox</h2>
+
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-errors-live">
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        Name is invalid.
+      }
+      @if (form.controls.title.invalid && form.controls.title.touched) {
+        Title is required.
+      }
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-field">
+        <label for="sb-name">Name</label>
+        <input
+          id="sb-name"
+          type="text"
+          formControlName="name"
+          autocomplete="off"
+          aria-describedby="sb-name-hint sb-name-error"
+          [attr.aria-invalid]="form.controls.name.invalid && form.controls.name.touched ? 'true' : null"
+        />
+        <span id="sb-name-hint" class="form-field__hint">
+          Lowercase letters, digits and hyphens; must start with a letter.
+        </span>
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <span id="sb-name-error" class="form-field__error" role="alert">
+            @if (form.controls.name.hasError('required')) {
+              Name is required.
+            } @else if (form.controls.name.hasError('pattern')) {
+              Use lowercase letters, digits and hyphens (must start with a letter).
+            }
+          </span>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="sb-title">Title</label>
+        <input
+          id="sb-title"
+          type="text"
+          formControlName="title"
+          autocomplete="off"
+          [attr.aria-invalid]="form.controls.title.invalid && form.controls.title.touched ? 'true' : null"
+          aria-describedby="sb-title-error"
+        />
+        @if (form.controls.title.invalid && form.controls.title.touched) {
+          <span id="sb-title-error" class="form-field__error" role="alert">
+            Title is required.
+          </span>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="sb-template">Template</label>
+        <select
+          id="sb-template"
+          formControlName="template"
+          [attr.aria-invalid]="form.controls.template.invalid && form.controls.template.touched ? 'true' : null"
+          aria-describedby="sb-template-error"
+        >
+          <option value="" disabled>— select a template —</option>
+          @for (tpl of templates(); track tpl.id) {
+            <option [value]="tpl.id">{{ tpl.label }}</option>
+          }
+        </select>
+        @if (form.controls.template.invalid && form.controls.template.touched) {
+          <span id="sb-template-error" class="form-field__error" role="alert">
+            Please select a template.
+          </span>
+        }
+      </div>
+
+      <button type="submit" class="btn btn--primary" [disabled]="form.invalid">
+        Create
+      </button>
+    </form>
+  </section>
+
+  <!-- Sandbox lists -->
+  @if (loading()) {
+    <p class="loading-msg" aria-live="polite" aria-busy="true">Loading sandboxes…</p>
+  }
+
+  @if (!loading() && sandboxes().length === 0) {
+    <p class="empty-state">No sandboxes yet. Create one above.</p>
+  }
+
+  <!-- Generated sandboxes -->
+  @if (generated().length > 0) {
+    <section class="card" aria-labelledby="generated-heading">
+      <h2 id="generated-heading">Generated</h2>
+      <ul class="sandbox-list" role="list">
+        @for (s of generated(); track s.name) {
+          <li class="sandbox-item">
+            <div class="sandbox-item__info">
+              <span class="sandbox-item__title">{{ s.title }}</span>
+              <span class="sandbox-item__name">{{ s.name }}</span>
+              <span class="sandbox-item__badge">{{ s.template }}</span>
+            </div>
+            <div class="sandbox-item__actions">
+              <a class="btn btn--sm btn--outline" [routerLink]="[s.routePath]">Open</a>
+              <button
+                class="btn btn--sm btn--outline"
+                type="button"
+                (click)="pin(s.name)"
+                [attr.aria-label]="'Pin ' + s.name"
+              >
+                Pin
+              </button>
+              @if (pendingDelete() === s.name) {
+                <span class="inline-confirm" role="group" [attr.aria-label]="'Confirm delete ' + s.name">
+                  <span class="inline-confirm__prompt">Delete {{ s.name }}?</span>
+                  <button
+                    class="btn btn--sm btn--danger"
+                    type="button"
+                    (click)="confirmDelete(s.name)"
+                  >
+                    Yes, delete
+                  </button>
+                  <button
+                    class="btn btn--sm btn--outline"
+                    type="button"
+                    (click)="cancelDelete()"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              } @else {
+                <button
+                  class="btn btn--sm btn--danger-outline"
+                  type="button"
+                  (click)="requestDelete(s.name)"
+                  [attr.aria-label]="'Delete ' + s.name"
+                >
+                  Delete
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+
+      <button
+        class="btn btn--danger btn--sm"
+        type="button"
+        (click)="wipe()"
+        aria-label="Wipe all generated sandboxes"
+      >
+        Wipe all generated
+      </button>
+    </section>
+  }
+
+  <!-- Saved sandboxes -->
+  @if (saved().length > 0) {
+    <section class="card" aria-labelledby="saved-heading">
+      <h2 id="saved-heading">Saved</h2>
+      <ul class="sandbox-list" role="list">
+        @for (s of saved(); track s.name) {
+          <li class="sandbox-item">
+            <div class="sandbox-item__info">
+              <span class="sandbox-item__title">{{ s.title }}</span>
+              <span class="sandbox-item__name">{{ s.name }}</span>
+              <span class="sandbox-item__badge">{{ s.template }}</span>
+            </div>
+            <div class="sandbox-item__actions">
+              <a class="btn btn--sm btn--outline" [routerLink]="[s.routePath]">Open</a>
+              <button
+                class="btn btn--sm btn--outline"
+                type="button"
+                (click)="unpin(s.name)"
+                [attr.aria-label]="'Unpin ' + s.name"
+              >
+                Unpin
+              </button>
+              @if (pendingDelete() === s.name) {
+                <span class="inline-confirm" role="group" [attr.aria-label]="'Confirm delete ' + s.name">
+                  <span class="inline-confirm__prompt">Delete {{ s.name }}?</span>
+                  <button
+                    class="btn btn--sm btn--danger"
+                    type="button"
+                    (click)="confirmDelete(s.name)"
+                  >
+                    Yes, delete
+                  </button>
+                  <button
+                    class="btn btn--sm btn--outline"
+                    type="button"
+                    (click)="cancelDelete()"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              } @else {
+                <button
+                  class="btn btn--sm btn--danger-outline"
+                  type="button"
+                  (click)="requestDelete(s.name)"
+                  [attr.aria-label]="'Delete ' + s.name"
+                >
+                  Delete
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</main>

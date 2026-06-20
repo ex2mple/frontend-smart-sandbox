@@ -3,10 +3,12 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "concurrently -k -n server,ng -c blue,green \"node tools/sandbox/server.mjs\" \"ng serve\"",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "sandbox:server": "node tools/sandbox/server.mjs",
+    "test:codegen": "vitest run tools/sandbox"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
@@ -24,6 +26,7 @@
     "@angular/build": "^21.2.14",
     "@angular/cli": "^21.2.14",
     "@angular/compiler-cli": "^21.2.0",
+    "concurrently": "^9.1.0",
     "jsdom": "^28.0.0",
     "less": "^4.2.0",
     "prettier": "^3.8.1",
