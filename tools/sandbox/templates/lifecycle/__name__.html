@@ -1,0 +1,103 @@
+<article class="lc-shell" aria-label="{{title}} sandbox">
+
+  <!-- Header -->
+  <header class="lc-header">
+    <h1>{{title}}</h1>
+    <p class="lc-subtitle">
+      Mount, unmount, or change the child input to see the exact lifecycle hook
+      firing order in the timeline below.
+    </p>
+  </header>
+
+  <!-- Controls -->
+  <section class="lc-controls" aria-label="Lifecycle controls">
+    <button
+      type="button"
+      class="sb-btn"
+      [class.sb-btn--danger]="childMounted()"
+      (click)="toggleChild()"
+      [attr.aria-pressed]="childMounted()"
+    >
+      {{ childMounted() ? 'Unmount child' : 'Mount child' }}
+    </button>
+
+    <button
+      type="button"
+      class="sb-btn sb-btn--secondary"
+      [attr.disabled]="childMounted() ? null : ''"
+      [attr.aria-disabled]="!childMounted()"
+      (click)="childMounted() && incrementInput()"
+    >
+      Increment input ({{ childInput() }})
+    </button>
+
+    <button
+      type="button"
+      class="sb-btn sb-btn--secondary"
+      (click)="clearTimeline()"
+    >
+      Clear timeline
+    </button>
+  </section>
+
+  <!-- Child mount point -->
+  <section class="lc-child-area" aria-label="Child component area" aria-live="polite">
+    @if (childMounted()) {
+      <lc-child [inputValue]="childInput()" />
+    } @else {
+      <div class="lc-child-placeholder" aria-hidden="true">Child unmounted</div>
+    }
+  </section>
+
+  <!-- Summary badges -->
+  <section class="lc-summary" aria-label="Hook category totals">
+    <dl class="lc-summary-list">
+      <div class="lc-summary-item lc-cat-init-change">
+        <dt>Init / Change</dt>
+        <dd>{{ groupedCount()['init-change'] }}</dd>
+      </div>
+      <div class="lc-summary-item lc-cat-content">
+        <dt>Content</dt>
+        <dd>{{ groupedCount()['content'] }}</dd>
+      </div>
+      <div class="lc-summary-item lc-cat-view">
+        <dt>View</dt>
+        <dd>{{ groupedCount()['view'] }}</dd>
+      </div>
+      <div class="lc-summary-item lc-cat-destroy">
+        <dt>Destroy</dt>
+        <dd>{{ groupedCount()['destroy'] }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- Timeline -->
+  <section class="lc-timeline-section" aria-label="Lifecycle hook timeline">
+    <h2 class="lc-timeline-title">
+      Timeline
+      <span class="lc-timeline-count" aria-live="polite" aria-atomic="true">
+        {{ events().length }} event{{ events().length === 1 ? '' : 's' }}
+      </span>
+    </h2>
+
+    @if (events().length === 0) {
+      <p class="lc-empty" role="status">No hooks fired yet — mount the child to start.</p>
+    } @else {
+      <ol class="lc-timeline" aria-label="Hook events in order">
+        @for (event of events(); track event.seq) {
+          <li class="lc-event" [class]="'lc-cat-' + event.category">
+            <span class="lc-event-seq" aria-label="Event number {{ event.seq }}">#{{ event.seq }}</span>
+            <span class="lc-event-hook">{{ event.hook }}</span>
+            <span class="lc-badge" [class]="'lc-badge--' + event.category" aria-label="Category: {{ categoryLabel[event.category] }}">
+              {{ categoryLabel[event.category] }}
+            </span>
+            @if (event.detail) {
+              <span class="lc-event-detail">{{ event.detail }}</span>
+            }
+          </li>
+        }
+      </ol>
+    }
+  </section>
+
+</article>

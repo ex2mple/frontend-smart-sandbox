@@ -1,0 +1,79 @@
+<article class="cd-shell" aria-label="{{title}} sandbox">
+
+  <!-- Header -->
+  <header class="cd-header">
+    <h1>{{title}}</h1>
+    <p class="cd-subtitle">
+      Each card shows how many times Angular <em>dirty-checked</em> it.
+      A card <span class="flash-pill" aria-hidden="true">flashes</span> on every check.
+    </p>
+  </header>
+
+  <!-- Controls -->
+  <section class="cd-controls" aria-label="Trigger controls">
+    <button type="button" class="sb-btn" (click)="localEvent()">
+      Local event
+    </button>
+    <button type="button" class="sb-btn" (click)="asyncUpdate()">
+      setTimeout (500 ms)
+    </button>
+    <button type="button" class="sb-btn" (click)="setSignalInput()">
+      Set signal input
+    </button>
+
+    <div class="cd-counters" aria-live="polite" aria-atomic="true">
+      <span>parent counter: {{ parentCounter() }}</span>
+      <span>shared input: {{ sharedInput() }}</span>
+    </div>
+  </section>
+
+  <!-- Tree -->
+  <section class="cd-tree" aria-label="Component tree">
+
+    <!-- Default subtree -->
+    <div class="cd-subtree">
+      <h2 class="subtree-title">
+        <span class="badge badge-default">Default</span>
+        ChangeDetectionStrategy.Default
+      </h2>
+      <p class="subtree-desc">
+        Re-checked on <strong>every</strong> CD pass, regardless of input changes.
+      </p>
+      <div class="cd-nodes">
+        @for (node of defaultNodes(); track node.label) {
+          <cd-node-default [label]="node.label" [value]="node.value" />
+        }
+      </div>
+    </div>
+
+    <!-- OnPush subtree -->
+    <div class="cd-subtree">
+      <h2 class="subtree-title">
+        <span class="badge badge-onpush">OnPush</span>
+        ChangeDetectionStrategy.OnPush
+      </h2>
+      <p class="subtree-desc">
+        Re-checked only when an <strong>input reference changes</strong> or
+        a signal/event inside the component fires.
+      </p>
+      <div class="cd-nodes">
+        @for (node of onpushNodes(); track node.label) {
+          <cd-node-onpush [label]="node.label" [value]="node.value" />
+        }
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Legend -->
+  <aside class="cd-legend" aria-label="Legend">
+    <h2 class="legend-title">Как читать счётчики</h2>
+    <ul>
+      <li><strong>checked N times</strong> — сколько раз Angular вызвал шаблон компонента (dirty-check).</li>
+      <li><strong>Local event</strong> — обновляет родительский signal; оба поддерева получают CD-проход, но OnPush-узлы проверяются только если их inputs изменились.</li>
+      <li><strong>setTimeout</strong> — макро-задача тоже запускает CD-проход (zone.js или явный markForCheck).</li>
+      <li><strong>Set signal input</strong> — меняет <code>sharedInput</code>, переданный как input() в оба поддерева; OnPush-узлы тоже перепроверяются.</li>
+    </ul>
+  </aside>
+
+</article>

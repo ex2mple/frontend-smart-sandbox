@@ -1,0 +1,302 @@
+:host {
+  display: flex;
+  min-height: 100%;
+  padding: var(--sb-space-8);
+  background: var(--sb-bg);
+  font-family: var(--sb-font-sans);
+}
+
+// ─── Shell layout ─────────────────────────────────────────────────────────────
+
+.tb-shell {
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-8);
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+
+.tb-header {
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--sb-text);
+    margin: 0 0 var(--sb-space-2);
+  }
+}
+
+.tb-subtitle {
+  color: var(--sb-text-muted);
+  margin: 0;
+  line-height: 1.6;
+  max-width: 52rem;
+
+  code {
+    font-family: var(--sb-font-mono);
+    font-size: 0.9em;
+    background: var(--sb-surface-2);
+    padding: 1px var(--sb-space-1);
+    border-radius: var(--sb-radius-sm);
+  }
+}
+
+// ─── Controls ─────────────────────────────────────────────────────────────────
+
+.tb-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sb-space-4);
+}
+
+.tb-hint {
+  font-size: 0.82rem;
+  color: var(--sb-text-muted);
+}
+
+// ─── Buttons ──────────────────────────────────────────────────────────────────
+
+.sb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--sb-radius-sm);
+  font-family: var(--sb-font-sans);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--sb-ring);
+  }
+
+  &--primary {
+    padding: var(--sb-space-2) var(--sb-space-6);
+    background: var(--sb-accent);
+    color: var(--sb-accent-contrast);
+    font-size: 0.9rem;
+
+    &:hover {
+      background: var(--sb-accent-hover);
+    }
+  }
+
+  &--sm {
+    padding: var(--sb-space-1) var(--sb-space-3);
+    background: var(--sb-surface-2);
+    color: var(--sb-text);
+    font-size: 0.8rem;
+    border: 1px solid var(--sb-border);
+
+    &:hover {
+      background: var(--sb-accent);
+      color: var(--sb-accent-contrast);
+      border-color: var(--sb-accent);
+    }
+  }
+}
+
+// ─── Table wrapper ────────────────────────────────────────────────────────────
+
+.tb-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
+}
+
+.tb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  background: var(--sb-surface);
+
+  thead {
+    background: var(--sb-surface-2);
+
+    th {
+      padding: var(--sb-space-3) var(--sb-space-4);
+      text-align: left;
+      font-weight: 700;
+      color: var(--sb-text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--sb-border);
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--sb-border);
+    transition: background 0.1s;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: var(--sb-surface-2);
+    }
+
+    &.tb-row--done {
+      background: var(--sb-surface);
+    }
+  }
+
+  td {
+    padding: var(--sb-space-3) var(--sb-space-4);
+    vertical-align: middle;
+    color: var(--sb-text);
+  }
+}
+
+// ─── Column widths ────────────────────────────────────────────────────────────
+
+.col-num {
+  width: 2.5rem;
+  color: var(--sb-text-muted);
+  font-family: var(--sb-font-mono);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.col-code {
+  width: 22rem;
+}
+
+.col-expl {
+  color: var(--sb-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.col-result {
+  width: 16rem;
+}
+
+.col-run {
+  width: 6rem;
+  text-align: center;
+}
+
+// ─── Code snippet in table ────────────────────────────────────────────────────
+
+.tb-snippet {
+  font-family: var(--sb-font-mono);
+  font-size: 0.84rem;
+  background: var(--sb-surface-2);
+  padding: var(--sb-space-1) var(--sb-space-2);
+  border-radius: var(--sb-radius-sm);
+  display: inline-block;
+  white-space: nowrap;
+}
+
+// ─── Result chips ─────────────────────────────────────────────────────────────
+
+.tb-result {
+  display: inline-block;
+  font-family: var(--sb-font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 2px var(--sb-space-2);
+  border-radius: var(--sb-radius-sm);
+
+  &--pending {
+    color: var(--sb-text-muted);
+    background: transparent;
+    font-weight: 400;
+  }
+
+  // this === primary obj
+  &--obj {
+    background: var(--sb-surface-2);
+    color: var(--sb-success);
+    border: 1px solid var(--sb-success);
+  }
+
+  // this === other obj (call/apply/bind)
+  &--other {
+    background: var(--sb-surface-2);
+    color: var(--sb-accent);
+    border: 1px solid var(--sb-accent);
+  }
+
+  // this === undefined
+  &--undef {
+    background: var(--sb-warn-surface);
+    color: var(--sb-warn);
+    border: 1px solid var(--sb-warn);
+  }
+
+  // this === component (arrow)
+  &--component {
+    background: var(--sb-surface-2);
+    color: var(--sb-text-muted);
+    border: 1px solid var(--sb-border);
+  }
+}
+
+// ─── Legend ───────────────────────────────────────────────────────────────────
+
+.tb-legend {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
+  padding: var(--sb-space-4) var(--sb-space-6);
+}
+
+.legend-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sb-text);
+  margin: 0 0 var(--sb-space-3);
+}
+
+.legend-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--sb-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-2);
+  color: var(--sb-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--sb-space-3);
+  }
+}
+
+.legend-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--sb-text-muted);
+  line-height: 1.4;
+
+  code {
+    font-family: var(--sb-font-mono);
+    font-size: 0.88em;
+    background: var(--sb-surface-2);
+    padding: 1px var(--sb-space-1);
+    border-radius: var(--sb-radius-sm);
+  }
+}
+
+// ─── Responsive ───────────────────────────────────────────────────────────────
+
+@media (max-width: 640px) {
+  .col-expl {
+    display: none;
+  }
+
+  .col-code {
+    width: auto;
+  }
+}

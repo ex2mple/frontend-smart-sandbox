@@ -1,0 +1,174 @@
+<article class="pc-shell" aria-label="{{title}} sandbox">
+
+  <!-- Header -->
+  <header class="pc-header">
+    <h1>{{title}}</h1>
+    <p class="pc-subtitle">
+      Every object has a hidden <code>[[Prototype]]</code> link.
+      Property access walks <em>up the chain</em> until found — or reaches <code>null</code>.
+    </p>
+  </header>
+
+  <!-- Chain visualizer -->
+  <section class="pc-chain-section" aria-label="Prototype chain">
+    <h2 class="section-title">Chain: rex → dog → animal → Object.prototype → null</h2>
+
+    <div class="pc-chain" role="list" aria-label="Prototype chain levels">
+      @for (level of chain(); track level.label; let last = $last) {
+
+        <div
+          class="pc-level"
+          [class.pc-level--found]="result().foundAt === level.label"
+          [class.pc-level--null]="level.object === null"
+          role="listitem"
+          [attr.aria-label]="level.object !== null
+            ? level.label + ' — own properties: ' + (level.ownProps.length ? level.ownProps.join(', ') : 'none')
+            : 'null — end of chain'"
+        >
+          <span class="level-name">{{ level.label }}</span>
+
+          @if (level.object !== null) {
+            <ul class="level-props" aria-label="Own properties of {{ level.label }}">
+              @if (level.ownProps.length === 0) {
+                <li class="prop-empty">(no own props)</li>
+              }
+              @for (prop of level.ownProps; track prop) {
+                <li
+                  class="prop-item"
+                  [class.prop-item--match]="result().foundAt === level.label && query() === prop"
+                >
+                  {{ prop }}
+                </li>
+              }
+            </ul>
+          }
+
+          @if (result().foundAt === level.label) {
+            <span class="found-badge" role="status" aria-live="polite">
+              found here
+            </span>
+          }
+        </div>
+
+        @if (!last) {
+          <div class="pc-arrow" aria-hidden="true">▼ [[Prototype]]</div>
+        }
+      }
+    </div>
+  </section>
+
+  <!-- Lookup controls -->
+  <section class="pc-lookup-section" aria-label="Property lookup">
+    <h2 class="section-title">Property lookup on <code>rex</code></h2>
+
+    <div class="pc-lookup-form">
+      <label class="lookup-label" for="prop-input">Property name:</label>
+      <div class="lookup-row">
+        <input
+          id="prop-input"
+          class="lookup-input"
+          type="text"
+          [value]="inputValue()"
+          (input)="inputValue.set($any($event.target).value)"
+          (keydown.enter)="lookup()"
+          aria-describedby="lookup-hint"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button type="button" class="sb-btn" (click)="lookup()">
+          Look up
+        </button>
+      </div>
+      <p id="lookup-hint" class="lookup-hint">
+        Try: name, bark, describe, kind, toString, missingProp — or type anything.
+      </p>
+    </div>
+
+    <!-- Quick suggestions -->
+    <div class="pc-suggestions" role="group" aria-label="Quick suggestions">
+      @for (s of suggestions; track s) {
+        <button
+          type="button"
+          class="suggest-btn"
+          [class.suggest-btn--active]="query() === s"
+          (click)="selectSuggestion(s)"
+          [attr.aria-pressed]="query() === s"
+        >
+          {{ s }}
+        </button>
+      }
+    </div>
+
+    <!-- Result -->
+    <div class="pc-result" role="status" aria-live="polite" aria-atomic="true">
+      @if (result().foundAt !== null) {
+        <div class="result-found">
+          <span class="result-icon" aria-hidden="true">✓</span>
+          <span>
+            <strong>rex.{{ query() }}</strong> found on
+            <strong class="result-level">{{ result().foundAt }}</strong>
+          </span>
+        </div>
+      } @else {
+        <div class="result-missing">
+          <span class="result-icon" aria-hidden="true">✗</span>
+          <span>
+            <strong>rex.{{ query() }}</strong> — not found anywhere → <code>undefined</code>
+          </span>
+        </div>
+      }
+
+      <!-- Walk trace -->
+      <ol class="result-trace" aria-label="Lookup walk trace">
+        @for (step of result().steps; track $index) {
+          <li [class.trace-found]="step.found" [class.trace-miss]="!step.found">
+            <span class="trace-level">{{ step.label }}</span>
+            <span class="trace-verdict" aria-label="{{ step.found ? 'found' : 'not own' }}">
+              {{ step.found ? '← found' : 'not own' }}
+            </span>
+          </li>
+        }
+      </ol>
+    </div>
+  </section>
+
+  <!-- Shadowing demo -->
+  <section class="pc-shadow-section" aria-label="Shadowing demo">
+    <h2 class="section-title">Shadowing demo</h2>
+    <p class="shadow-desc">
+      When you set an own property on <code>rex</code>, it <strong>shadows</strong>
+      the same-named property further up the chain.
+      Try adding <code>rex.kind</code> and re-running the <code>"kind"</code> lookup.
+    </p>
+
+    <div class="shadow-actions">
+      @if (!shadowed()) {
+        <button type="button" class="sb-btn" (click)="addShadow()">
+          Add own .kind to rex
+        </button>
+      } @else {
+        <button type="button" class="sb-btn sb-btn--warn" (click)="resetShadow()">
+          Reset (delete rex.kind)
+        </button>
+      }
+
+      @if (shadowed()) {
+        <span class="shadow-note" role="status" aria-live="polite">
+          <code>rex.kind = "good boy"</code> — now shadows <code>animal.kind = "animal"</code>
+        </span>
+      }
+    </div>
+  </section>
+
+  <!-- Legend -->
+  <aside class="pc-legend" aria-label="Legend">
+    <h2 class="legend-title">Как читать диаграмму</h2>
+    <ul>
+      <li><strong>Собственные свойства (own props)</strong> — перечислены внутри каждого блока; именно они проверяются при поиске на данном уровне.</li>
+      <li><strong>[[Prototype]] ▼</strong> — внутренняя ссылка, по которой JS переходит вверх, если свойство не найдено.</li>
+      <li><strong>found here</strong> — блок, где поиск остановился; подсвечивается зелёным.</li>
+      <li><strong>Shadowing</strong> — когда собственное свойство есть на нижнем уровне, поиск туда доходит раньше и никогда не видит одноимённое свойство выше.</li>
+    </ul>
+  </aside>
+
+</article>

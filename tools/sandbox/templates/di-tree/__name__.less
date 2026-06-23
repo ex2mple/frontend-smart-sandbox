@@ -1,0 +1,298 @@
+:host {
+  display: flex;
+  min-height: 100%;
+  padding: var(--sb-space-8);
+  background: var(--sb-bg);
+  font-family: var(--sb-font-sans);
+}
+
+.di-page {
+  width: 100%;
+  max-width: 56rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-8);
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+
+.di-header {
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--sb-text);
+    margin-bottom: var(--sb-space-2);
+  }
+}
+
+.di-subtitle {
+  color: var(--sb-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+
+  code {
+    font-family: var(--sb-font-mono);
+    background: var(--sb-surface-2);
+    padding: 0.1em 0.4em;
+    border-radius: var(--sb-radius-sm);
+    font-size: 0.9em;
+  }
+}
+
+// ─── Legend ───────────────────────────────────────────────────────────────────
+
+.di-legend {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
+  padding: var(--sb-space-4) var(--sb-space-6);
+}
+
+.di-legend-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sb-text-muted);
+  margin-bottom: var(--sb-space-3);
+}
+
+.di-legend-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sb-space-4);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--sb-space-2);
+    font-size: 0.875rem;
+    color: var(--sb-text);
+
+    code {
+      font-family: var(--sb-font-mono);
+      font-size: 0.85em;
+    }
+  }
+}
+
+// ─── Tree ─────────────────────────────────────────────────────────────────────
+
+.di-tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-4);
+}
+
+// ─── Node cards ───────────────────────────────────────────────────────────────
+
+.di-node {
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
+  padding: var(--sb-space-4) var(--sb-space-6);
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow);
+
+  &--root {
+    border-left: 4px solid var(--sb-accent);
+    background: var(--sb-surface);
+  }
+
+  &--branch {
+    border-left: 4px solid var(--sb-success);
+    background: var(--sb-surface);
+    margin-left: var(--sb-space-8);
+  }
+
+  &--grandchild {
+    border-left: 4px solid var(--sb-warn);
+    background: var(--sb-surface);
+    margin-left: var(--sb-space-8);
+  }
+
+  &--optional {
+    border-left: 4px solid var(--sb-text-muted);
+    background: var(--sb-warn-surface);
+  }
+}
+
+.di-node-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sb-space-3);
+  margin-bottom: var(--sb-space-4);
+  flex-wrap: wrap;
+}
+
+.di-node-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--sb-text);
+}
+
+.di-children {
+  margin-top: var(--sb-space-4);
+}
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
+
+.di-badge {
+  display: inline-block;
+  padding: 0.2em 0.6em;
+  border-radius: var(--sb-radius-sm);
+  font-family: var(--sb-font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &--root {
+    background: var(--sb-accent);
+    color: var(--sb-accent-contrast);
+  }
+
+  &--branch {
+    background: var(--sb-success);
+    color: var(--sb-accent-contrast);
+  }
+
+  &--optional {
+    background: var(--sb-surface-2);
+    color: var(--sb-text-muted);
+    border: 1px solid var(--sb-border);
+  }
+}
+
+// ─── Instance ID badges ───────────────────────────────────────────────────────
+
+.di-id-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.15em 0.5em;
+  border-radius: var(--sb-radius-sm);
+  background: var(--sb-success);
+  color: var(--sb-accent-contrast);
+  font-family: var(--sb-font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-right: var(--sb-space-2);
+
+  &--root {
+    background: var(--sb-accent);
+  }
+}
+
+.di-null-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.15em 0.5em;
+  border-radius: var(--sb-radius-sm);
+  background: var(--sb-surface-2);
+  color: var(--sb-text-muted);
+  font-family: var(--sb-font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 1px solid var(--sb-border);
+  margin-right: var(--sb-space-2);
+}
+
+// ─── Facts (definition lists inside nodes) ────────────────────────────────────
+
+.di-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-3);
+  margin: 0;
+}
+
+.di-fact {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--sb-space-3) var(--sb-space-4);
+  align-items: center;
+
+  dt {
+    font-family: var(--sb-font-mono);
+    font-size: 0.8rem;
+    color: var(--sb-text-muted);
+    white-space: nowrap;
+  }
+
+  dd {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sb-space-2);
+    margin: 0;
+  }
+}
+
+.di-note {
+  font-size: 0.8rem;
+  color: var(--sb-text-muted);
+  font-style: italic;
+}
+
+// ─── Explainer ────────────────────────────────────────────────────────────────
+
+.di-explainer {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
+  padding: var(--sb-space-6);
+
+  h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--sb-text);
+    margin-bottom: var(--sb-space-4);
+  }
+}
+
+.di-explainer-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-3);
+  margin: 0;
+}
+
+.di-explainer-item {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--sb-space-2) var(--sb-space-4);
+
+  dt {
+    font-family: var(--sb-font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--sb-accent);
+    white-space: nowrap;
+  }
+
+  dd {
+    font-size: 0.875rem;
+    color: var(--sb-text-muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  code {
+    font-family: var(--sb-font-mono);
+    background: var(--sb-surface-2);
+    padding: 0.1em 0.3em;
+    border-radius: var(--sb-radius-sm);
+  }
+}
+
+// ─── Focus visible ────────────────────────────────────────────────────────────
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--sb-ring);
+}

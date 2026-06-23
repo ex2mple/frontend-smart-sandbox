@@ -1,0 +1,96 @@
+<article class="tb-shell" aria-label="{{title}} sandbox">
+
+  <!-- Header -->
+  <header class="tb-header">
+    <h1>{{title}}</h1>
+    <p class="tb-subtitle">
+      Значение <code>this</code> определяется <strong>местом вызова</strong>, а не местом определения функции.
+      ES-модули работают в strict mode: отвязанная функция получает <code>undefined</code>, а не <code>window</code>.
+    </p>
+  </header>
+
+  <!-- Run-all button -->
+  <section class="tb-controls" aria-label="Управление">
+    <button type="button" class="sb-btn sb-btn--primary" (click)="runAll()">
+      Запустить все
+    </button>
+    <span class="tb-hint" aria-live="polite">
+      Нажмите «Run» у каждой строки или «Запустить все» сразу.
+      Результаты также выводятся в консоль.
+    </span>
+  </section>
+
+  <!-- Table -->
+  <section class="tb-table-wrap" aria-label="Таблица call site → this">
+    <table class="tb-table">
+      <thead>
+        <tr>
+          <th scope="col" class="col-num">#</th>
+          <th scope="col" class="col-code">Call site</th>
+          <th scope="col" class="col-expl">Пояснение</th>
+          <th scope="col" class="col-result">this =</th>
+          <th scope="col" class="col-run">Запуск</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.id) {
+          <tr [class.tb-row--done]="row.result !== null">
+            <td class="col-num" aria-label="Строка {{ row.id }}">{{ row.id }}</td>
+            <td class="col-code">
+              <code class="tb-snippet">{{ row.callSite }}</code>
+            </td>
+            <td class="col-expl">{{ row.explanation }}</td>
+            <td class="col-result" aria-live="polite" [attr.aria-label]="'this равно ' + (row.result ?? 'ещё не запущено')">
+              @if (row.result !== null) {
+                <span
+                  class="tb-result"
+                  [class.tb-result--obj]="row.result.startsWith('obj')"
+                  [class.tb-result--undef]="row.result === 'undefined'"
+                  [class.tb-result--other]="row.result === sampleOther"
+                  [class.tb-result--component]="row.result.startsWith('component')"
+                >{{ row.result }}</span>
+              } @else {
+                <span class="tb-result tb-result--pending" aria-label="Ещё не запущено">—</span>
+              }
+            </td>
+            <td class="col-run">
+              <button
+                type="button"
+                class="sb-btn sb-btn--sm"
+                (click)="runRow(row.id)"
+                [attr.aria-label]="'Запустить строку ' + row.id"
+              >Run</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Legend -->
+  <aside class="tb-legend" aria-label="Легенда цветов">
+    <h2 class="legend-title">Легенда</h2>
+    <ul class="legend-list">
+      <li>
+        <span class="tb-result tb-result--obj" aria-hidden="true">{{ sampleObj }}</span>
+        — this === исходный объект (метод вызван через точку)
+      </li>
+      <li>
+        <span class="tb-result tb-result--other" aria-hidden="true">{{ sampleOther }}</span>
+        — this === явно переданный объект (call / apply / bind)
+      </li>
+      <li>
+        <span class="tb-result tb-result--undef" aria-hidden="true">undefined</span>
+        — strict mode: функция без контекста
+      </li>
+      <li>
+        <span class="tb-result tb-result--component" aria-hidden="true">component</span>
+        — стрелочная функция захватила лексический this
+      </li>
+    </ul>
+    <p class="legend-note">
+      ES-модули всегда в строгом режиме. В браузерной консоли вне модуля отвязанная функция вернула бы <code>window</code>.
+    </p>
+  </aside>
+
+</article>

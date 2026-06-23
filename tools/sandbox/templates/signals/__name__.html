@@ -1,0 +1,172 @@
+<main class="layout">
+  <header class="page-header">
+    <h1>{{title}}</h1>
+    <p class="subtitle">
+      Отслеживайте, как <code>signal()</code>, <code>computed()</code> и <code>effect()</code>
+      связаны в граф реактивности — живые значения в узлах обновляются мгновенно.
+    </p>
+  </header>
+
+  <!-- ── Dependency graph ──────────────────────────────────────────────── -->
+  <section class="graph-section" aria-label="Граф зависимостей сигналов">
+    <h2 class="section-title">Граф зависимостей</h2>
+
+    <div class="graph">
+      <!-- Row 1: base signals -->
+      <div class="graph-row graph-row--sources">
+        <div class="node" [class.node--flash]="flashA()" aria-label="a: {{ a() }}">
+          <span class="node__label">a</span>
+          <span class="node__value">{{ a() }}</span>
+        </div>
+        <div class="node" [class.node--flash]="flashB()" aria-label="b: {{ b() }}">
+          <span class="node__label">b</span>
+          <span class="node__value">{{ b() }}</span>
+        </div>
+      </div>
+
+      <!-- Arrows down -->
+      <div class="graph-arrows graph-arrows--merge" aria-hidden="true">
+        <span class="arrow arrow--left">↘</span>
+        <span class="arrow arrow--right">↙</span>
+      </div>
+
+      <!-- Row 2: sum -->
+      <div class="graph-row graph-row--sum">
+        <div class="node node--computed" [class.node--flash]="flashSum()" aria-label="sum: {{ sum() }}">
+          <span class="node__label">sum = a + b</span>
+          <span class="node__value">{{ sum() }}</span>
+        </div>
+      </div>
+
+      <!-- Arrow down -->
+      <div class="graph-arrows" aria-hidden="true">
+        <span class="arrow">↓</span>
+      </div>
+
+      <!-- Row 3: doubled -->
+      <div class="graph-row graph-row--doubled">
+        <div class="node node--computed" [class.node--flash]="flashDoubled()" aria-label="doubled: {{ doubled() }}">
+          <span class="node__label">doubled = sum × 2</span>
+          <span class="node__value">{{ doubled() }}</span>
+        </div>
+      </div>
+
+      <!-- Arrow down -->
+      <div class="graph-arrows" aria-hidden="true">
+        <span class="arrow">↓</span>
+      </div>
+
+      <!-- Row 4: effect -->
+      <div class="graph-row graph-row--effect">
+        <div class="node node--effect" aria-label="effect runs: {{ effectRuns() }}">
+          <span class="node__label">effect (side effect)</span>
+          <span class="node__value">ran {{ effectRuns() }}×</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="legend">
+      <strong>Glitch-free:</strong> изменение <code>a</code> пересчитывает <code>sum</code>,
+      затем <code>doubled</code>, затем запускает <code>effect</code> — ровно <em>один раз</em>,
+      не дважды.
+    </p>
+  </section>
+
+  <!-- ── Controls ──────────────────────────────────────────────────────── -->
+  <section class="controls-section" aria-label="Управление сигналами">
+    <h2 class="section-title">Управление</h2>
+
+    <div class="controls">
+      <!-- a controls -->
+      <div class="control-group">
+        <span class="control-group__label" id="ctrl-a-label">Сигнал <code>a</code></span>
+        <div class="btn-row" role="group" aria-labelledby="ctrl-a-label">
+          <button type="button" class="btn" (click)="decA()" aria-label="Уменьшить a">−</button>
+          <output class="value-display" aria-live="polite" aria-atomic="true">{{ a() }}</output>
+          <button type="button" class="btn" (click)="incA()" aria-label="Увеличить a">+</button>
+        </div>
+      </div>
+
+      <!-- b controls -->
+      <div class="control-group">
+        <span class="control-group__label" id="ctrl-b-label">Сигнал <code>b</code></span>
+        <div class="btn-row" role="group" aria-labelledby="ctrl-b-label">
+          <button type="button" class="btn" (click)="decB()" aria-label="Уменьшить b">−</button>
+          <output class="value-display" aria-live="polite" aria-atomic="true">{{ b() }}</output>
+          <button type="button" class="btn" (click)="incB()" aria-label="Увеличить b">+</button>
+        </div>
+      </div>
+
+      <!-- No-op demo -->
+      <div class="control-group">
+        <span class="control-group__label" id="ctrl-noop-label">No-op демо</span>
+        <div class="btn-row" role="group" aria-labelledby="ctrl-noop-label">
+          <button type="button" class="btn btn--secondary" (click)="setANoop()">
+            a.set( a() ) — нет пересчёта
+          </button>
+        </div>
+        <p class="hint">Нажми и проверь счётчик effect — он не увеличится.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Stats panel ────────────────────────────────────────────────────── -->
+  <section class="stats-section" aria-label="Текущие значения">
+    <h2 class="section-title">Счётчики</h2>
+    <dl class="stats">
+      <div class="stat">
+        <dt>a</dt>
+        <dd>{{ a() }}</dd>
+      </div>
+      <div class="stat">
+        <dt>b</dt>
+        <dd>{{ b() }}</dd>
+      </div>
+      <div class="stat">
+        <dt>sum</dt>
+        <dd>{{ sum() }}</dd>
+      </div>
+      <div class="stat">
+        <dt>doubled</dt>
+        <dd>{{ doubled() }}</dd>
+      </div>
+      <div class="stat stat--highlight">
+        <dt>effect runs</dt>
+        <dd>{{ effectRuns() }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- ── Untracked demo ─────────────────────────────────────────────────── -->
+  <section class="untracked-section" aria-label="Демо untracked">
+    <h2 class="section-title">untracked() демо</h2>
+    <p class="desc">
+      <code>untrackedResult = a + untracked(() =&gt; x())</code><br>
+      Изменение <strong>x</strong> <em>не</em> перезапускает <code>untrackedResult</code>.
+      Изменение <strong>a</strong> — запускает (и захватывает текущее значение x).
+    </p>
+
+    <div class="untracked-row">
+      <div class="untracked-values">
+        <div class="stat">
+          <dt>x</dt>
+          <dd>{{ x() }}</dd>
+        </div>
+        <div class="stat">
+          <dt>untrackedResult</dt>
+          <dd>{{ untrackedResult() }}</dd>
+        </div>
+      </div>
+
+      <div class="untracked-actions">
+        <button type="button" class="btn btn--secondary" (click)="incX()">
+          x++ (не вызовет пересчёт untrackedResult)
+        </button>
+        <p class="hint">
+          Нажми несколько раз, затем изменяй <code>a</code> — <code>untrackedResult</code>
+          «прыгнет» сразу до актуального значения x.
+        </p>
+      </div>
+    </div>
+  </section>
+</main>

@@ -1,0 +1,80 @@
+<main class="di-page">
+  <header class="di-header">
+    <h1>{{title}}</h1>
+    <p class="di-subtitle">
+      Иерархия инжекторов Angular: <code>providedIn: 'root'</code> vs локальные
+      провайдеры, <code>@Self</code>, <code>@SkipSelf</code>, <code>@Optional</code>.
+    </p>
+  </header>
+
+  <section class="di-legend" aria-label="Легенда">
+    <h2 class="di-legend-title">Легенда</h2>
+    <ul class="di-legend-list">
+      <li>
+        <span class="di-id-badge di-id-badge--root" aria-hidden="true">&#35;N</span>
+        Root-синглтон (<code>providedIn: 'root'</code>)
+      </li>
+      <li>
+        <span class="di-id-badge" aria-hidden="true">&#35;N</span>
+        Экземпляр из локального провайдера компонента
+      </li>
+      <li>
+        <span class="di-null-badge" aria-label="null">—</span>
+        <code>null</code> — провайдер не найден (<code>@Optional</code>)
+      </li>
+    </ul>
+  </section>
+
+  <section class="di-tree" aria-label="Дерево инжекторов">
+    <!-- Root node -->
+    <div class="di-node di-node--root" role="region" aria-label="Root node">
+      <div class="di-node-header">
+        <span class="di-badge di-badge--root">providedIn: 'root'</span>
+        <span class="di-node-title">Root (AppComponent)</span>
+      </div>
+      <dl class="di-facts">
+        <div class="di-fact">
+          <dt>inject(TokenService)</dt>
+          <dd>
+            <span class="di-id-badge di-id-badge--root">&#35;{{ rootInst.id }}</span>
+            <span class="di-note">Root-синглтон — первый и единственный</span>
+          </dd>
+        </div>
+      </dl>
+
+      <!-- Branch subtree -->
+      <div class="di-children">
+        <di-branch />
+      </div>
+    </div>
+
+    <!-- Optional demo (separate subtree, no provider) -->
+    <di-optional-node />
+  </section>
+
+  <section class="di-explainer" aria-label="Пояснения">
+    <h2>Как это работает</h2>
+    <dl class="di-explainer-list">
+      <div class="di-explainer-item">
+        <dt><code>providedIn: 'root'</code></dt>
+        <dd>Единственный экземпляр на всё приложение. Все компоненты без локального провайдера получают его.</dd>
+      </div>
+      <div class="di-explainer-item">
+        <dt><code>providers: [TokenService]</code> на компоненте</dt>
+        <dd>Создаёт новый экземпляр для этого компонента и всех его потомков (Branch и Grandchild делят один экземпляр).</dd>
+      </div>
+      <div class="di-explainer-item">
+        <dt><code>@Self</code></dt>
+        <dd>Angular смотрит ТОЛЬКО в инжектор текущего узла. Если провайдера нет — ошибка (или null при <code>@Optional</code>).</dd>
+      </div>
+      <div class="di-explainer-item">
+        <dt><code>@SkipSelf</code></dt>
+        <dd>Пропускает собственный инжектор и поднимается на уровень выше. Удобно для «родительской» зависимости.</dd>
+      </div>
+      <div class="di-explainer-item">
+        <dt><code>@Optional</code></dt>
+        <dd>Если токен не зарегистрирован нигде в дереве — возвращает <code>null</code> вместо ошибки.</dd>
+      </div>
+    </dl>
+  </section>
+</main>
