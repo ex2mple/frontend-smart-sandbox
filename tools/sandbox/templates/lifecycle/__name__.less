@@ -31,6 +31,32 @@
   margin: 0;
 }
 
+// ─── Section title (shared by predict / diagram / replay) ─────────────────────
+
+.lc-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--sb-text);
+  margin: 0 0 var(--sb-space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--sb-space-3);
+}
+
+.lc-predict,
+.lc-diagram,
+.lc-replay {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
+  padding: var(--sb-space-6);
+}
+
+/* Карточка-эксперимент несёт собственную рамку — секция даёт только заголовок. */
+.lc-predict sb-experiment-card {
+  display: block;
+}
+
 // ─── Controls ────────────────────────────────────────────────────────────────
 
 .lc-controls {
@@ -117,6 +143,12 @@
   color: var(--sb-text);
 }
 
+.lc-child-instance {
+  font-family: var(--sb-font-mono);
+  font-weight: 500;
+  color: var(--sb-text-muted);
+}
+
 .lc-child-value {
   font-family: var(--sb-font-mono);
   color: var(--sb-text-muted);
@@ -173,23 +205,83 @@
 .lc-cat-view        { border-left: 3px solid var(--sb-warn); }
 .lc-cat-destroy     { border-left: 3px solid var(--sb-danger); }
 
-// ─── Timeline ─────────────────────────────────────────────────────────────────
+// ─── Live hook-order diagram ──────────────────────────────────────────────────
 
-.lc-timeline-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sb-space-3);
+.lc-diagram-meta {
+  margin: 0 0 var(--sb-space-4);
+  font-size: 0.88rem;
+  color: var(--sb-text-muted);
+
+  strong {
+    color: var(--sb-text);
+    font-family: var(--sb-font-mono);
+    font-weight: 600;
+  }
 }
 
-.lc-timeline-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--sb-text);
+.lc-hook-row {
+  list-style: none;
   margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sb-space-2);
+}
+
+.lc-hook-box {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--sb-space-3);
+  gap: var(--sb-space-1);
+  padding: var(--sb-space-2) var(--sb-space-3);
+  background: var(--sb-surface-2);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-sm);
+  border-left-width: 3px;
+  font-family: var(--sb-font-mono);
+  font-size: 0.8rem;
+  color: var(--sb-text-muted);
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+
+  &--active {
+    background: var(--sb-surface);
+    color: var(--sb-text);
+    font-weight: 700;
+    box-shadow: 0 0 0 2px var(--sb-accent);
+  }
 }
+
+.lc-hook-name {
+  white-space: nowrap;
+}
+
+.lc-hook-repeat {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0 var(--sb-space-2);
+  border-radius: 999px;
+  background: var(--sb-accent);
+  color: var(--sb-accent-contrast);
+}
+
+.lc-diagram-rule {
+  margin: var(--sb-space-4) 0 0;
+  font-size: 0.85rem;
+  color: var(--sb-text-muted);
+  line-height: 1.5;
+
+  code {
+    font-family: var(--sb-font-mono);
+    font-size: 0.8rem;
+    background: var(--sb-surface-2);
+    padding: 0 var(--sb-space-1);
+    border-radius: var(--sb-radius-sm);
+    color: var(--sb-text);
+  }
+}
+
+// ─── Replay ───────────────────────────────────────────────────────────────────
 
 .lc-timeline-count {
   font-size: 0.8rem;
@@ -207,81 +299,6 @@
   margin: 0;
 }
 
-.lc-timeline {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sb-space-2);
-}
-
-.lc-event {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sb-space-3);
-  padding: var(--sb-space-2) var(--sb-space-4);
-  background: var(--sb-surface);
-  border: 1px solid var(--sb-border);
-  border-radius: var(--sb-radius-sm);
-  border-left-width: 3px;
-  font-size: 0.9rem;
-}
-
-.lc-event-seq {
-  font-family: var(--sb-font-mono);
-  font-size: 0.75rem;
-  color: var(--sb-text-muted);
-  min-width: 2.5rem;
-  flex-shrink: 0;
-}
-
-.lc-event-hook {
-  font-family: var(--sb-font-mono);
-  font-weight: 600;
-  color: var(--sb-text);
-  flex-shrink: 0;
-}
-
-.lc-event-detail {
-  font-family: var(--sb-font-mono);
-  font-size: 0.8rem;
-  color: var(--sb-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-// ─── Badges ───────────────────────────────────────────────────────────────────
-
-.lc-badge {
-  flex-shrink: 0;
-  margin-left: auto;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 1px var(--sb-space-2);
-  border-radius: var(--sb-radius-sm);
-  border: 1px solid currentColor;
-
-  &--init-change {
-    color: var(--sb-accent);
-    background: transparent;
-  }
-
-  &--content {
-    color: var(--sb-success);
-    background: transparent;
-  }
-
-  &--view {
-    color: var(--sb-warn);
-    background: transparent;
-  }
-
-  &--destroy {
-    color: var(--sb-danger);
-    background: transparent;
-  }
+.lc-stepper {
+  margin-top: var(--sb-space-2);
 }

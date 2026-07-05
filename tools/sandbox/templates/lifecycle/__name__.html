@@ -4,10 +4,23 @@
   <header class="lc-header">
     <h1>{{title}}</h1>
     <p class="lc-subtitle">
-      Смонтируй, размонтируй или измени input дочернего компонента — и посмотри
-      точный порядок срабатывания lifecycle-хуков в тайм-лайне ниже.
+      Сначала предскажи ответ в карточке, потом монтируй, меняй input или
+      размонтируй дочерний компонент — вызовутся НАСТОЯЩИЕ lifecycle-хуки, и
+      каждое действие запишется. Затем проиграй запись по шагам и смотри, какой
+      хук подсвечивается на диаграмме порядка.
     </p>
   </header>
+
+  <!-- Prediction card -->
+  <section class="lc-predict" aria-label="Предсказание">
+    <h2 class="lc-section-title">Предскажи результат</h2>
+    <sb-experiment-card
+      [question]="cardQuestion"
+      [options]="cardOptions"
+      [actualIndex]="cardActualIndex()"
+      [explanation]="cardExplanation()"
+    />
+  </section>
 
   <!-- Controls -->
   <section class="lc-controls" aria-label="Lifecycle controls">
@@ -26,7 +39,7 @@
       class="sb-btn sb-btn--secondary"
       [attr.disabled]="childMounted() ? null : ''"
       [attr.aria-disabled]="!childMounted()"
-      (click)="childMounted() && incrementInput()"
+      (click)="incrementInput()"
     >
       Increment input ({{ childInput() }})
     </button>
@@ -34,9 +47,9 @@
     <button
       type="button"
       class="sb-btn sb-btn--secondary"
-      (click)="clearTimeline()"
+      (click)="reset()"
     >
-      Clear timeline
+      Reset
     </button>
   </section>
 
@@ -49,54 +62,80 @@
     }
   </section>
 
+  <!-- Live hook-order diagram, driven by the current replay step's snapshot -->
+  <section class="lc-diagram" aria-label="Живой порядок хуков">
+    <h2 class="lc-section-title">Живой порядок хуков</h2>
+    <p class="lc-diagram-meta" aria-live="polite" aria-atomic="true">
+      Действие: <strong>{{ currentState().actionLabel ?? '—' }}</strong>
+      · Экземпляр:
+      <strong>{{ currentState().activeInstanceId !== null ? '#' + currentState().activeInstanceId : '—' }}</strong>
+    </p>
+    <ol class="lc-hook-row" aria-label="Последовательность хуков компонента">
+      @for (item of hookOrder; track item.hook) {
+        <li
+          class="lc-hook-box"
+          [class]="'lc-cat-' + item.category"
+          [class.lc-hook-box--active]="currentState().activeHook === item.hook"
+          [attr.aria-current]="currentState().activeHook === item.hook ? 'step' : null"
+        >
+          <span class="lc-hook-name">{{ item.label }}</span>
+          @if (currentState().activeHook === item.hook && currentState().repeatCount > 1) {
+            <span
+              class="lc-hook-repeat"
+              [attr.aria-label]="currentState().repeatCount + ' повторов подряд'"
+            >×{{ currentState().repeatCount }}</span>
+          }
+        </li>
+      }
+    </ol>
+    <p class="lc-diagram-rule">
+      Хуки идут в этом порядке при первом рендере. <code>ngDoCheck</code>,
+      <code>ngAfterContentChecked</code> и <code>ngAfterViewChecked</code> повторяются на
+      каждом проходе change detection — подряд идущие повторы сворачиваются в тайм-лайне
+      в один шаг «×N» вместо N строк.
+    </p>
+  </section>
+
   <!-- Summary badges -->
   <section class="lc-summary" aria-label="Hook category totals">
     <dl class="lc-summary-list">
       <div class="lc-summary-item lc-cat-init-change">
-        <dt>Init / Change</dt>
-        <dd>{{ groupedCount()['init-change'] }}</dd>
+        <dt>{{ categoryLabel['init-change'] }}</dt>
+        <dd>{{ categoryTotals()['init-change'] }}</dd>
       </div>
       <div class="lc-summary-item lc-cat-content">
-        <dt>Content</dt>
-        <dd>{{ groupedCount()['content'] }}</dd>
+        <dt>{{ categoryLabel['content'] }}</dt>
+        <dd>{{ categoryTotals()['content'] }}</dd>
       </div>
       <div class="lc-summary-item lc-cat-view">
-        <dt>View</dt>
-        <dd>{{ groupedCount()['view'] }}</dd>
+        <dt>{{ categoryLabel['view'] }}</dt>
+        <dd>{{ categoryTotals()['view'] }}</dd>
       </div>
       <div class="lc-summary-item lc-cat-destroy">
-        <dt>Destroy</dt>
-        <dd>{{ groupedCount()['destroy'] }}</dd>
+        <dt>{{ categoryLabel['destroy'] }}</dt>
+        <dd>{{ categoryTotals()['destroy'] }}</dd>
       </div>
     </dl>
   </section>
 
-  <!-- Timeline -->
-  <section class="lc-timeline-section" aria-label="Lifecycle hook timeline">
-    <h2 class="lc-timeline-title">
+  <!-- Replay -->
+  <section class="lc-replay" aria-label="Реплей тайм-лайна">
+    <h2 class="lc-section-title">
       Тайм-лайн
       <span class="lc-timeline-count" aria-live="polite" aria-atomic="true">
-        всего: {{ events().length }}
+        записано шагов: {{ replaySteps().length }}
       </span>
     </h2>
-
-    @if (events().length === 0) {
-      <p class="lc-empty" role="status">Хуки ещё не срабатывали — смонтируй дочерний компонент.</p>
+    @if (hasReplay()) {
+      <sb-stepper
+        class="lc-stepper"
+        [steps]="replaySteps()"
+        (positionChange)="stepPosition.set($event)"
+      />
     } @else {
-      <ol class="lc-timeline" aria-label="Hook events in order">
-        @for (event of events(); track event.seq) {
-          <li class="lc-event" [class]="'lc-cat-' + event.category">
-            <span class="lc-event-seq" aria-label="Event number {{ event.seq }}">#{{ event.seq }}</span>
-            <span class="lc-event-hook">{{ event.hook }}</span>
-            <span class="lc-badge" [class]="'lc-badge--' + event.category" aria-label="Category: {{ categoryLabel[event.category] }}">
-              {{ categoryLabel[event.category] }}
-            </span>
-            @if (event.detail) {
-              <span class="lc-event-detail">{{ event.detail }}</span>
-            }
-          </li>
-        }
-      </ol>
+      <p class="lc-empty" role="status">
+        Хуки ещё не срабатывали — смонтируй дочерний компонент, чтобы появилась запись.
+      </p>
     }
   </section>
 
