@@ -4,57 +4,26 @@
   <header class="el-header">
     <h1>{{title}}</h1>
     <p class="el-subtitle">
-      Нажми <strong>Run</strong>, чтобы увидеть реальный порядок выполнения:
-      синхронный код → все микротаски → макротаска (setTimeout).
+      Сначала предскажи ответ в карточке, потом нажми <strong>Run</strong> —
+      сценарий выполнится по-настоящему и запишется. Затем проиграй запись по шагам
+      и смотри, как задачи проходят через стек и очереди.
     </p>
   </header>
 
-  <!-- Loop model diagram -->
-  <section class="el-model" aria-label="Event loop model">
-    <h2 class="el-section-title">Модель Event Loop</h2>
-    <div class="el-queues" role="img" aria-label="Три очереди: Call Stack, Microtask Queue, Macrotask Queue">
-      <div class="el-queue el-queue--stack">
-        <div class="el-queue-label">Call Stack</div>
-        <div class="el-queue-body">
-          <div class="el-queue-item">sync code runs here</div>
-          <div class="el-queue-item el-queue-item--muted">… then empties</div>
-        </div>
-      </div>
-      <div class="el-loop-arrow" aria-hidden="true">
-        <span class="el-arrow-line"></span>
-        <span class="el-arrow-label">↓ drain ALL</span>
-      </div>
-      <div class="el-queue el-queue--micro">
-        <div class="el-queue-label">Microtask Queue</div>
-        <div class="el-queue-body">
-          <div class="el-queue-item">Promise.then()</div>
-          <div class="el-queue-item">queueMicrotask()</div>
-        </div>
-      </div>
-      <div class="el-loop-arrow" aria-hidden="true">
-        <span class="el-arrow-line"></span>
-        <span class="el-arrow-label">↓ take ONE</span>
-      </div>
-      <div class="el-queue el-queue--macro">
-        <div class="el-queue-label">Macrotask Queue</div>
-        <div class="el-queue-body">
-          <div class="el-queue-item">setTimeout(fn)</div>
-          <div class="el-queue-item">setInterval(fn)</div>
-        </div>
-      </div>
-    </div>
-    <p class="el-loop-rule">
-      <strong>Правило:</strong>
-      Запусти синхронный код до конца → слей <em>все</em> микротаски →
-      возьми <em>одну</em> макротаску → повтори.
-    </p>
+  <!-- Scenario source -->
+  <section class="el-scenario" aria-label="Код сценария">
+    <h2 class="el-section-title">Сценарий (реальный код)</h2>
+    <pre class="el-code" tabindex="0"><code>{{ scenarioCode }}</code></pre>
   </section>
 
   <!-- Extra tasks builder -->
-  <section class="el-builder" aria-label="Add extra tasks to scenario">
+  <section class="el-builder" aria-label="Дополнительные задачи">
     <h2 class="el-section-title">Дополнительные задачи</h2>
-    <p class="el-builder-hint">Добавь задачи перед запуском — они допишутся в конец сценария (после <code>sync 2</code>) — и посмотри, как изменится порядок.</p>
-    <div class="el-builder-btns" role="group" aria-label="Add task buttons">
+    <p class="el-builder-hint">
+      Добавь задачи перед запуском — они допишутся в конец сценария (после
+      <code>sync 2</code>). Это может изменить и правильный ответ в карточке.
+    </p>
+    <div class="el-builder-btns" role="group" aria-label="Кнопки добавления задач">
       <button type="button" class="sb-btn sb-btn--secondary" (click)="addTask('setTimeout')">
         + setTimeout
       </button>
@@ -69,7 +38,7 @@
       </button>
     </div>
     @if (extraTasks().length > 0) {
-      <ul class="el-task-list" aria-label="Queued extra tasks" role="list">
+      <ul class="el-task-list" aria-label="Добавленные задачи" role="list">
         @for (task of extraTasks(); track task.id) {
           <li class="el-task-item">
             <span class="el-task-kind el-task-kind--{{ task.kind }}">{{ task.kind }}</span>
@@ -78,7 +47,7 @@
               type="button"
               class="el-remove-btn"
               (click)="removeTask(task.id)"
-              [attr.aria-label]="'Remove ' + task.label"
+              [attr.aria-label]="'Убрать ' + task.label"
             >
               ×
             </button>
@@ -88,8 +57,19 @@
     }
   </section>
 
+  <!-- Prediction card -->
+  <section class="el-predict" aria-label="Предсказание">
+    <h2 class="el-section-title">Предскажи результат</h2>
+    <sb-experiment-card
+      [question]="cardQuestion"
+      [options]="cardOptions"
+      [actualIndex]="cardActualIndex()"
+      [explanation]="cardExplanation()"
+    />
+  </section>
+
   <!-- Run / Reset controls -->
-  <section class="el-controls" aria-label="Run controls">
+  <section class="el-controls" aria-label="Управление запуском">
     <button
       type="button"
       class="sb-btn sb-btn--primary"
@@ -102,33 +82,83 @@
     <button type="button" class="sb-btn sb-btn--danger" (click)="reset()">
       Reset
     </button>
-    @if (hasOutput()) {
-      <span class="el-output-count" aria-live="polite" aria-atomic="true">
-        {{ outputCount() }} lines
+    @if (hasReplay()) {
+      <span class="el-step-count" aria-live="polite" aria-atomic="true">
+        записано шагов: {{ replaySteps().length }}
       </span>
     }
   </section>
 
-  <!-- Output -->
-  <section class="el-output-section" aria-label="Execution output">
-    <h2 class="el-section-title">Вывод (реальный порядок)</h2>
-    @if (!hasOutput()) {
-      <p class="el-empty-hint" aria-live="polite">Нажми Run, чтобы увидеть порядок выполнения.</p>
+  <!-- Live replay: three columns driven by the current step's snapshot -->
+  <section class="el-replay" aria-label="Реплей прогона">
+    <h2 class="el-section-title">Реплей: стек и очереди</h2>
+    <div class="el-queues" role="group" aria-label="Состояние Call Stack, Microtask Queue и Macrotask Queue на текущем шаге">
+      <div class="el-queue el-queue--stack">
+        <div class="el-queue-label">Call Stack</div>
+        <div class="el-queue-body">
+          <!-- track $index + пульс по чётности шага: кадр меняется на месте,
+               без пересоздания DOM (иначе dev-warning NG0956 на каждый шаг). -->
+          @for (item of currentState().stack; track $index) {
+            <div
+              class="el-queue-item el-queue-item--frame"
+              [class.el-queue-item--pulse-a]="stepPosition() % 2 === 0"
+              [class.el-queue-item--pulse-b]="stepPosition() % 2 === 1"
+            >{{ item }}</div>
+          } @empty {
+            <div class="el-queue-item el-queue-item--muted">(пусто)</div>
+          }
+        </div>
+      </div>
+      <div class="el-loop-arrow" aria-hidden="true">
+        <span class="el-arrow-line"></span>
+        <span class="el-arrow-label">↓ слить ВСЕ</span>
+      </div>
+      <div class="el-queue el-queue--micro">
+        <div class="el-queue-label">Microtask Queue</div>
+        <div class="el-queue-body">
+          @for (item of currentState().micro; track item) {
+            <div class="el-queue-item el-queue-item--enter">{{ item }}</div>
+          } @empty {
+            <div class="el-queue-item el-queue-item--muted">(пусто)</div>
+          }
+        </div>
+      </div>
+      <div class="el-loop-arrow" aria-hidden="true">
+        <span class="el-arrow-line"></span>
+        <span class="el-arrow-label">↓ взять ОДНУ</span>
+      </div>
+      <div class="el-queue el-queue--macro">
+        <div class="el-queue-label">Macrotask Queue</div>
+        <div class="el-queue-body">
+          @for (item of currentState().macro; track item) {
+            <div class="el-queue-item el-queue-item--enter">{{ item }}</div>
+          } @empty {
+            <div class="el-queue-item el-queue-item--muted">(пусто)</div>
+          }
+        </div>
+      </div>
+    </div>
+    <p class="el-loop-rule">
+      <strong>Правило:</strong>
+      выполни синхронный код до конца → слей <em>все</em> микротаски →
+      возьми <em>одну</em> макротаску → повтори. Снимки колонок показывают
+      состояние <em>после</em> текущего шага.
+    </p>
+    @if (hasReplay()) {
+      <sb-stepper
+        class="el-stepper"
+        [steps]="replaySteps()"
+        (positionChange)="stepPosition.set($event)"
+      />
     } @else {
-      <ol class="el-output-list" aria-live="polite" aria-label="Execution output lines">
-        @for (line of outputLines(); track line.id) {
-          <li class="el-output-line el-output-line--{{ line.phase }}">
-            <span class="el-line-number" aria-hidden="true">{{ line.id }}</span>
-            <el-phase-badge [phase]="line.phase" />
-            <span class="el-line-text">{{ line.text }}</span>
-          </li>
-        }
-      </ol>
+      <p class="el-empty-hint" aria-live="polite">
+        Нажми Run — появится запись прогона, и колонки будут меняться на каждом шаге.
+      </p>
     }
   </section>
 
   <!-- Legend -->
-  <aside class="el-legend" aria-label="Phase legend">
+  <aside class="el-legend" aria-label="Легенда фаз">
     <h2 class="el-legend-title">Легенда фаз</h2>
     <ul role="list">
       <li>
@@ -137,7 +167,7 @@
       </li>
       <li>
         <span class="phase-badge phase-micro" aria-hidden="true">microtask</span>
-        <span><code>Promise.then</code> / <code>queueMicrotask</code> — сливаются <em>все</em> до следующей макротаски.</span>
+        <span><code>Promise.then</code> / <code>queueMicrotask</code> — сливаются <em>все</em> до следующей макротаски, в том числе <em>между</em> макротасками.</span>
       </li>
       <li>
         <span class="phase-badge phase-macro" aria-hidden="true">macrotask</span>

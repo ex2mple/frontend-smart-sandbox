@@ -38,19 +38,47 @@
 .el-section-title { margin: 0 0 var(--sb-space-4); }
 .el-legend-title  { margin: 0 0 var(--sb-space-3); }
 
-.el-model,
+.el-scenario,
 .el-builder,
-.el-output-section,
+.el-predict,
+.el-replay,
 .el-legend {
   background: var(--sb-surface);
   border: 1px solid var(--sb-border);
   border-radius: var(--sb-radius);
 }
 
-.el-model,
+.el-scenario,
 .el-builder,
-.el-output-section {
+.el-predict,
+.el-replay {
   padding: var(--sb-space-6);
+}
+
+.el-code {
+  margin: 0;
+  padding: var(--sb-space-4);
+  background: var(--sb-surface-2);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-sm);
+  overflow-x: auto;
+
+  code {
+    font-family: var(--sb-font-mono);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--sb-text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--sb-ring);
+  }
+}
+
+/* Карточка-эксперимент несёт собственную рамку — секция даёт только заголовок. */
+.el-predict sb-experiment-card {
+  display: block;
 }
 
 .el-legend {
@@ -112,14 +140,65 @@
   display: flex;
   flex-direction: column;
   gap: var(--sb-space-1);
+  /* ~3 строки: колонки не прыгают по высоте при смене шага. */
+  min-height: 5rem;
 }
 
 .el-queue-item {
   font-family: var(--sb-font-mono);
   font-size: 0.8rem;
   color: var(--sb-text);
+  padding: 2px var(--sb-space-2);
+  border-radius: var(--sb-radius-sm);
 
   &--muted { color: var(--sb-text-muted); }
+
+  /* Очереди: track по метке — анимируются только НОВЫЕ элементы шага. */
+  &--enter {
+    background: var(--sb-surface-2);
+    animation: el-item-in 0.3s ease-out;
+  }
+
+  /* Кадр стека: DOM переиспользуется, пульс перезапускается сменой
+     a/b-класса по чётности шага (две одинаковые @keyframes). */
+  &--frame {
+    background: var(--sb-surface-2);
+    box-shadow: inset 2px 0 0 var(--sb-accent);
+  }
+
+  &--pulse-a { animation: el-item-in 0.3s ease-out; }
+  &--pulse-b { animation: el-item-in-b 0.3s ease-out; }
+
+  .el-queue--micro &--enter { box-shadow: inset 2px 0 0 var(--sb-success); }
+  .el-queue--macro &--enter { box-shadow: inset 2px 0 0 var(--sb-warn); }
+}
+
+@keyframes el-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Дубликат el-item-in: чередование имени анимации перезапускает её без
+   пересоздания DOM-узла. */
+@keyframes el-item-in-b {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.el-stepper {
+  margin-top: var(--sb-space-4);
 }
 
 .el-loop-arrow {
@@ -188,8 +267,7 @@
   margin-bottom: var(--sb-space-4);
 }
 
-.el-task-list,
-.el-output-list {
+.el-task-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -224,13 +302,13 @@
 }
 
 .el-task-label,
-.el-output-count {
+.el-step-count {
   font-size: 0.85rem;
   font-family: var(--sb-font-mono);
   color: var(--sb-text);
 }
 
-.el-output-count {
+.el-step-count {
   margin-left: auto;
   color: var(--sb-text-muted);
 }
@@ -309,38 +387,6 @@
   margin: 0;
   color: var(--sb-text-muted);
   font-style: italic;
-}
-
-.el-output-line {
-  display: flex;
-  align-items: center;
-  gap: var(--sb-space-3);
-  padding: var(--sb-space-2) var(--sb-space-3);
-  border-radius: var(--sb-radius-sm);
-  border-left: 3px solid transparent;
-  background: var(--sb-surface-2);
-
-  &--sync      { border-left-color: var(--sb-accent); }
-  &--microtask { border-left-color: var(--sb-success); }
-  &--macrotask { border-left-color: var(--sb-warn); }
-}
-
-.el-line-number,
-.el-line-text {
-  font-family: var(--sb-font-mono);
-}
-
-.el-line-number {
-  font-size: 0.75rem;
-  color: var(--sb-text-muted);
-  min-width: 1.5rem;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.el-line-text {
-  font-size: 0.88rem;
-  color: var(--sb-text);
 }
 
 .phase-badge {
