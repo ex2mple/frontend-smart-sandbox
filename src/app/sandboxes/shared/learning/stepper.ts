@@ -199,6 +199,50 @@ import { ReplayStep } from './run-recorder';
       background: var(--sb-surface-2);
       color: var(--sb-text-muted);
     }
+
+    /* Маркер пользовательского действия (signals, lifecycle). */
+    .sb-step--action {
+      background: var(--sb-accent);
+      color: var(--sb-accent-contrast);
+    }
+
+    /* Реактивный граф (signals). */
+    .sb-step--set {
+      background: rgba(79, 70, 229, 0.1);
+      color: var(--sb-accent);
+    }
+
+    .sb-step--recompute {
+      background: rgba(4, 120, 87, 0.1);
+      color: var(--sb-success);
+    }
+
+    .sb-step--effect {
+      /* --sb-warn слишком светлый для мелкого текста (AA), локально темнее. */
+      background: var(--sb-warn-surface);
+      color: #8a5a13;
+    }
+
+    /* Категории хуков (lifecycle). */
+    .sb-step--init-change {
+      background: rgba(79, 70, 229, 0.1);
+      color: var(--sb-accent);
+    }
+
+    .sb-step--content {
+      background: rgba(4, 120, 87, 0.1);
+      color: var(--sb-success);
+    }
+
+    .sb-step--view {
+      background: var(--sb-warn-surface);
+      color: #8a5a13;
+    }
+
+    .sb-step--destroy {
+      background: rgba(198, 40, 40, 0.1);
+      color: var(--sb-danger);
+    }
   `,
 })
 export class Stepper {
@@ -233,6 +277,14 @@ export class Stepper {
     'found',
     'miss',
     'info',
+    'action',
+    'set',
+    'recompute',
+    'effect',
+    'init-change',
+    'content',
+    'view',
+    'destroy',
   ]);
 
   constructor() {
