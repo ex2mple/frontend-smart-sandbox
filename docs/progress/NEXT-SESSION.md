@@ -24,9 +24,10 @@ Everything below is committed; `tsc` clean, `test:codegen` 24/24, `test:devtools
 ## What's left
 
 1. **Stage 3 rollout — apply the replay model to the remaining 7 templates**, in spec priority order: this-binding → lifecycle → change-detection → closures → di-tree → prototype-chain → signals. Use `tools/sandbox/templates/event-loop/` as the reference implementation and the spec's per-template content list (rule ladder + `new` rule for this-binding; action markers + ×N collapse for lifecycle; CD pass log with skipped-with-reason for change-detection; environment-record boxes for closures; resolution-walk animation for di-tree; predict-the-level for prototype-chain; per-node recompute counters + update-a-and-b button for signals). Per-template flow that worked for the pilot: fix-agent → reviewer-agent → orchestrator fixes findings → regenerate demo (`wipe` + `create`) → `ng build` → live browser check → commit. Templates are independent zones — parallelize writers, but only ONE browser user at a time.
-2. **Monaco editor + live preview** — unchanged (files API + lazy Monaco at `/s/:name/edit`).
-3. **`create` cleanup-on-failure** — remove partially-written sandbox folder on error.
-4. **GitHub-витрина** — explicitly LAST per user: real README, ROADMAP, LICENSE, CI, remote+push (nothing exists yet, not even a remote).
+2. **`create` cleanup-on-failure** — remove partially-written sandbox folder on error.
+3. **GitHub-витрина** — explicitly LAST per user: real README, ROADMAP, LICENSE, CI, remote+push (nothing exists yet, not even a remote).
+
+> Dropped 2026-07-05 per user: **Monaco editor + live preview** is out of the plans — do not re-add.
 
 ## How to work here (standing agreements)
 
