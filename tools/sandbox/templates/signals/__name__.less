@@ -140,6 +140,14 @@ section {
   font-family: var(--sb-font-mono);
 }
 
+.node__count {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--sb-text-muted);
+  font-family: var(--sb-font-mono);
+  margin-top: 2px;
+}
+
 .legend {
   margin-top: var(--sb-space-4);
   font-size: 0.875rem;
@@ -249,6 +257,99 @@ section {
     font-family: var(--sb-font-mono);
     font-size: 0.85em;
   }
+}
+
+// ── Glitch-free experiment ────────────────────────────────────────────────
+
+.sg-hint {
+  font-size: 0.9rem;
+  color: var(--sb-text-muted);
+  margin: 0 0 var(--sb-space-4);
+  line-height: 1.6;
+
+  code {
+    background: var(--sb-surface-2);
+    padding: 0 0.3em;
+    border-radius: var(--sb-radius-sm);
+    font-family: var(--sb-font-mono);
+    font-size: 0.9em;
+  }
+}
+
+// Карточка-эксперимент несёт собственную рамку — секция даёт только заголовок.
+.sg-experiment sb-experiment-card {
+  display: block;
+  margin-bottom: var(--sb-space-4);
+}
+
+.sg-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sb-space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--sb-space-4);
+}
+
+.sg-step-count {
+  font-size: 0.85rem;
+  font-family: var(--sb-font-mono);
+  color: var(--sb-text-muted);
+}
+
+.sg-snapshot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sb-space-3);
+  margin: 0 0 var(--sb-space-4);
+}
+
+.sg-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--sb-surface-2);
+  border: 2px solid var(--sb-border);
+  border-radius: var(--sb-radius-sm);
+  padding: var(--sb-space-2) var(--sb-space-4);
+  min-width: 6rem;
+  transition: border-color 0.15s;
+
+  dt {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--sb-text-muted);
+    margin-bottom: var(--sb-space-1);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--sb-text);
+    font-family: var(--sb-font-mono);
+  }
+
+  &--active {
+    border-color: var(--sb-accent);
+  }
+}
+
+.sg-stat__count {
+  font-size: 0.75rem;
+  color: var(--sb-text-muted);
+  font-weight: 600;
+}
+
+.sg-stepper {
+  margin-top: var(--sb-space-2);
+}
+
+.sg-empty-hint {
+  margin: 0;
+  color: var(--sb-text-muted);
+  font-style: italic;
 }
 
 // ── Stats panel ───────────────────────────────────────────────────────────
