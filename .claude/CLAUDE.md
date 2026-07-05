@@ -40,6 +40,7 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use `computed()` for derived state
 - Keep state transformations pure and predictable
 - Do NOT use `mutate` on signals, use `update` or `set` instead
+- The app is zoneless: never write to a signal synchronously during change detection (lifecycle hooks, template/render evaluation, `computed()` bodies) — buffer and flush once via `queueMicrotask`, or the write re-triggers CD (worst case an infinite loop, NG0103/NG0600)
 
 ## Templates
 
