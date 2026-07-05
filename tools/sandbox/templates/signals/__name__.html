@@ -58,7 +58,7 @@
 
       <!-- Row 4: effect -->
       <div class="graph-row graph-row--effect">
-        <div class="node node--effect" aria-label="effect runs: {{ effectRuns() }}">
+        <div class="node node--effect" [class.node--flash]="flashEffect()" aria-label="effect runs: {{ effectRuns() }}">
           <span class="node__label">effect (side effect)</span>
           <span class="node__value">ran {{ effectRuns() }}×</span>
         </div>
@@ -68,7 +68,7 @@
     <p class="legend">
       <strong>Glitch-free:</strong> изменение <code>a</code> пересчитывает <code>sum</code>,
       затем <code>doubled</code>, затем запускает <code>effect</code> — ровно <em>один раз</em>,
-      не дважды.
+      не дважды. Узел мигает только когда он <em>реально</em> пересчитался.
     </p>
   </section>
 
@@ -105,7 +105,7 @@
             a.set( a() ) — нет пересчёта
           </button>
         </div>
-        <p class="hint">Нажми и проверь счётчик effect — он не увеличится.</p>
+        <p class="hint">Нажми: ни один узел графа не мигнёт и счётчик effect не увеличится — значение не изменилось.</p>
       </div>
     </div>
   </section>

@@ -5,6 +5,7 @@ import {
   effect,
   signal,
   untracked,
+  type WritableSignal,
 } from '@angular/core';
 
 @Component({
@@ -18,16 +19,38 @@ export class {{className}} {
   protected readonly a = signal(1);
   protected readonly b = signal(2);
 
+  // ── flash state for graph boxes ───────────────────────────────────────────
+  // Each node flashes only when its part of the reactive graph ACTUALLY ran:
+  // computed nodes pulse from inside their recompute, the effect node from
+  // inside the effect. A no-op write (a.set(a())) recomputes nothing → no flash.
+  protected readonly flashA = signal(false);
+  protected readonly flashB = signal(false);
+  protected readonly flashSum = signal(false);
+  protected readonly flashDoubled = signal(false);
+  protected readonly flashEffect = signal(false);
+
+  // The app is zoneless: never write to a signal synchronously inside a
+  // computed body or during change detection. queueMicrotask defers the write
+  // until after the current reactive evaluation finishes.
+  private pulse(sig: WritableSignal<boolean>): void {
+    queueMicrotask(() => {
+      sig.set(true);
+      setTimeout(() => sig.set(false), 300);
+    });
+  }
+
   // ── derived signals ───────────────────────────────────────────────────────
-  // NOTE: console.log inside computed is for demo only — in production code
-  // computed factories must be pure/side-effect-free.
+  // NOTE: console.log + the deferred pulse() inside computed are for demo
+  // only — in production code computed factories must be pure/side-effect-free.
   protected readonly sum = computed(() => {
     console.info('[computed] sum recalculated');
+    this.pulse(this.flashSum);
     return this.a() + this.b();
   });
 
   protected readonly doubled = computed(() => {
     console.info('[computed] doubled recalculated');
+    this.pulse(this.flashDoubled);
     return this.sum() * 2;
   });
 
@@ -41,7 +64,22 @@ export class {{className}} {
     untracked(() => {
       this.effectRuns.update((n) => n + 1);
     });
+    // Flash the effect node exactly when the effect actually runs.
+    this.pulse(this.flashEffect);
     console.log(`[effect] doubled changed → ${v}`);
+  });
+
+  // ── flash a/b when they actually change ───────────────────────────────────
+  // Driven by the reactive system (not by button handlers): the effect reruns
+  // only when the signal's value really changed, so a.set(a()) flashes nothing.
+  private readonly _flashAOnChange = effect(() => {
+    this.a();
+    this.pulse(this.flashA);
+  });
+
+  private readonly _flashBOnChange = effect(() => {
+    this.b();
+    this.pulse(this.flashB);
   });
 
   // ── untracked demo ────────────────────────────────────────────────────────
@@ -57,39 +95,27 @@ export class {{className}} {
     return aVal + xVal;
   });
 
-  // ── flash state for graph boxes ───────────────────────────────────────────
-  protected readonly flashA = signal(false);
-  protected readonly flashB = signal(false);
-  protected readonly flashSum = signal(false);
-  protected readonly flashDoubled = signal(false);
-
-  private flash(sig: ReturnType<typeof signal<boolean>>): void {
-    sig.set(true);
-    setTimeout(() => sig.set(false), 400);
-  }
-
   // ── controls ──────────────────────────────────────────────────────────────
   protected incA(): void {
     this.a.update((n) => n + 1);
-    this.flash(this.flashA);
   }
 
   protected decA(): void {
     this.a.update((n) => n - 1);
-    this.flash(this.flashA);
   }
 
   protected incB(): void {
     this.b.update((n) => n + 1);
-    this.flash(this.flashB);
   }
 
   protected decB(): void {
     this.b.update((n) => n - 1);
-    this.flash(this.flashB);
   }
 
-  /** Set a to its current value — Angular skips recompute when value is same. */
+  /**
+   * Set a to its current value — Angular skips recompute when value is same.
+   * Watch the graph: NO node flashes, because nothing actually recomputed.
+   */
   protected setANoop(): void {
     this.a.set(this.a());
     console.log('[noop] a.set(a()) called — no recompute because value unchanged');

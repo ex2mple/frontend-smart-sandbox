@@ -37,8 +37,12 @@ export class TokenService {
         <div class="di-fact">
           <dt>{{ 'inject(…, { skipSelf: true })' }}</dt>
           <dd>
-            <span class="di-id-badge di-id-badge--root">&#35;{{ skipped.id }}</span>
-            <span class="di-note">перепрыгнул Branch → получил Root</span>
+            <span class="di-id-badge">&#35;{{ skipped.id }}</span>
+            <span class="di-note">
+              тот же &#35;{{ skipped.id }}! @SkipSelf пропускает только СВОЙ инжектор
+              (у Grandchild он пуст) → поиск идёт вверх и находит провайдер Branch.
+              Ловушка: skipSelf ≠ «пропустить ближайшего предка»
+            </span>
           </dd>
         </div>
       </dl>
@@ -48,12 +52,15 @@ export class TokenService {
 export class DiGrandchild implements OnInit {
   // Normal inject: resolves to Branch's provider (nearest ancestor)
   readonly inherited = inject(TokenService);
-  // skipSelf: skips the Branch injector, climbs to Root
+  // skipSelf: skips ONLY the grandchild's own injector (which has no provider
+  // anyway), then walks up the parent chain — the first provider found is
+  // Branch's, so this is the SAME instance as `inherited` (#2, not Root).
+  // Classic gotcha: skipSelf ≠ «пропустить ближайшего предка».
   readonly skipped = inject(TokenService, { skipSelf: true });
 
   ngOnInit(): void {
     console.info(
-      `[DI Grandchild] inherited id=${this.inherited.id} (Branch), skipSelf id=${this.skipped.id} (Root)`,
+      `[DI Grandchild] inherited id=${this.inherited.id} (Branch), skipSelf id=${this.skipped.id} (тоже Branch! skipSelf пропускает только СВОЙ инжектор, дальше — обычный поиск вверх)`,
     );
   }
 }
@@ -90,7 +97,11 @@ export class DiGrandchild implements OnInit {
           <dt>{{ 'inject(…, { skipSelf: true })' }}</dt>
           <dd>
             <span class="di-id-badge di-id-badge--root">&#35;{{ parentInst.id }}</span>
-            <span class="di-note">@SkipSelf — пропускает свой, берёт Root</span>
+            <span class="di-note">
+              @SkipSelf пропустил собственный провайдер Branch → выше по дереву
+              провайдеров нет до самого Root → Root-синглтон. Здесь skipSelf
+              меняет результат, потому что свой провайдер есть
+            </span>
           </dd>
         </div>
       </dl>
@@ -105,7 +116,8 @@ export class DiBranch implements OnInit {
   readonly own = inject(TokenService);
   // Self: same own provider (would throw if no local provider)
   readonly self = inject(TokenService, { self: true });
-  // SkipSelf: jumps over local provider → gets Root's singleton
+  // SkipSelf: skips Branch's OWN provider; no other provider exists on the
+  // way up, so the search ends at the root injector → Root's singleton (#1).
   readonly parentInst = inject(TokenService, { skipSelf: true });
 
   ngOnInit(): void {
