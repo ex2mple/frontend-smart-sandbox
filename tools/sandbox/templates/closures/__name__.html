@@ -82,7 +82,7 @@
           <pre><code>for (var i = 0; i &lt; 3; i++) {{'{'}}
   fns.push(() => i);
 {{'}'}}
-// После цикла i === 3 для всех</code></pre>
+// var: все стрелки замкнули ОДНУ переменную i</code></pre>
         </div>
         <button
           type="button"
@@ -93,8 +93,12 @@
         <output id="var-output" class="loop-output" aria-live="polite">
           @if (varResults().length) {
             <span class="result-label">Результат:</span>
-            <span class="result-value warn">{{ varResultsText() }}</span>
-            <span class="result-note">(все вернули 3 — замкнули <em>одну</em> переменную)</span>
+            <span
+              class="result-value"
+              [class.warn]="varShared()"
+              [class.success]="!varShared()"
+            >{{ varResultsText() }}</span>
+            <span class="result-note">({{ varResultsNote() }})</span>
           } @else {
             <span class="result-placeholder">— нажмите кнопку —</span>
           }
@@ -121,8 +125,12 @@
         <output id="let-output" class="loop-output" aria-live="polite">
           @if (letResults().length) {
             <span class="result-label">Результат:</span>
-            <span class="result-value success">{{ letResultsText() }}</span>
-            <span class="result-note">(каждая вернула свой снимок)</span>
+            <span
+              class="result-value"
+              [class.warn]="letShared()"
+              [class.success]="!letShared()"
+            >{{ letResultsText() }}</span>
+            <span class="result-note">({{ letResultsNote() }})</span>
           } @else {
             <span class="result-placeholder">— нажмите кнопку —</span>
           }
@@ -203,9 +211,19 @@
         >Добавить в корзину</button>
       </form>
 
-      <p class="card-note">
-        Попробуй в консоли: <code>cartStore.items</code> → <em>undefined</em>
-        (приватная переменная закрыта замыканием)
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="tryReadItemsOutside()"
+        aria-controls="outside-access-note"
+      >Попробовать прочитать items снаружи</button>
+      <p id="outside-access-note" class="card-note" aria-live="polite">
+        @if (outsideAccessResult(); as accessResult) {
+          <code>{{ accessResult }}</code>
+        } @else {
+          Приватный массив <code>items</code> живёт только в замыкании —
+          нажми кнопку и проверь реальным кодом.
+        }
       </p>
     </article>
   </section>

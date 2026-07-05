@@ -4,22 +4,37 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
 interface DemoObj {
   label: string;
-  method(): string;
+  method(arg?: unknown): string;
 }
+
+// Sink: lets the demo observe what `method` actually computed even when the
+// caller discards the return value (e.g. Array.prototype.forEach in row 7).
+let lastMethodResult = '(method не вызывался)';
 
 function makeObj(label: string): DemoObj {
   return {
     label,
-    method(): string {
+    method(arg?: unknown): string {
       // `this` is whatever the call site provides; type it as unknown so the
       // runtime checks below are honest (TS would otherwise narrow `this` to DemoObj).
       const self: unknown = this;
-      if (self === undefined) return 'undefined';
-      if (self === globalThis) return 'globalThis';
-      if (typeof (self as DemoObj).label === 'string') {
-        return `obj{ label: "${(self as DemoObj).label}" }`;
+      let described: string;
+      if (self === undefined) {
+        described = 'undefined';
+      } else if (self === globalThis) {
+        described = 'globalThis';
+      } else if (typeof (self as DemoObj).label === 'string') {
+        described = `obj{ label: "${(self as DemoObj).label}" }`;
+        // Show the received argument so call(other, 'call') vs
+        // apply(other, ['apply']) produce visibly different results.
+        if (arg !== undefined) {
+          described += ` + арг. "${String(arg)}"`;
+        }
+      } else {
+        described = String(self);
       }
-      return String(self);
+      lastMethodResult = described;
+      return described;
     },
   };
 }
@@ -65,13 +80,13 @@ export class {{className}} {
     },
     {
       id: 3,
-      callSite: 'f.call(other)',
-      explanation: '.call() явно задаёт this === other',
+      callSite: "f.call(other, 'call')",
+      explanation: '.call() явно задаёт this === other, аргументы — через запятую',
       result: null,
     },
     {
       id: 4,
-      callSite: 'f.apply(other)',
+      callSite: "f.apply(other, ['apply'])",
       explanation: '.apply() — то же что .call(), но аргументы массивом',
       result: null,
     },
@@ -99,13 +114,17 @@ export class {{className}} {
     const { obj, other } = this;
     const f = obj.method; // detached — no `this` binding
 
-    // Arrow function defined here: captures the component's `this`, not obj's
+    // Arrow function: no own `this` — it lexically captures `this` from the
+    // enclosing runRow(). We VERIFY at runtime that it really is the component
+    // instance instead of asserting it with a hardcoded string.
     const arrowFn = (): string => {
       const self: unknown = this;
       if (self === undefined) return 'undefined';
       if (self === globalThis) return 'globalThis';
-      // `this` is the component instance (arrow captures lexical this)
-      return `component ({{className}})`;
+      if (self instanceof {{className}}) {
+        return 'component ({{className}})';
+      }
+      return String(self);
     };
 
     let result: string;
@@ -118,10 +137,10 @@ export class {{className}} {
         result = f();
         break;
       case 3:
-        result = f.call(other);
+        result = f.call(other, 'call');
         break;
       case 4:
-        result = f.apply(other);
+        result = f.apply(other, ['apply']);
         break;
       case 5: {
         const b = f.bind(other);
@@ -132,13 +151,13 @@ export class {{className}} {
         result = arrowFn();
         break;
       case 7: {
-        let captured = 'not set';
-        [1].forEach(function (this: unknown) {
-          if (this === undefined) captured = 'undefined';
-          else if (this === globalThis) captured = 'globalThis';
-          else captured = String(this);
-        });
-        result = captured;
+        // Exactly the displayed code: the REAL detached method goes into
+        // forEach. forEach invokes it as a plain function (this === undefined
+        // in strict mode) and discards the return value, so we read what the
+        // method computed from the module-level sink.
+        lastMethodResult = '(method не вызывался)';
+        [1].forEach(f);
+        result = lastMethodResult;
         break;
       }
       default:

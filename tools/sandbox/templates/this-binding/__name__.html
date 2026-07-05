@@ -44,9 +44,9 @@
               @if (row.result !== null) {
                 <span
                   class="tb-result"
-                  [class.tb-result--obj]="row.result.startsWith('obj')"
+                  [class.tb-result--obj]="row.result.startsWith('obj') && !row.result.includes('other')"
                   [class.tb-result--undef]="row.result === 'undefined'"
-                  [class.tb-result--other]="row.result === sampleOther"
+                  [class.tb-result--other]="row.result.startsWith('obj') && row.result.includes('other')"
                   [class.tb-result--component]="row.result.startsWith('component')"
                 >{{ row.result }}</span>
               } @else {

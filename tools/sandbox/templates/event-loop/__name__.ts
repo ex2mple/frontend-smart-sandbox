@@ -83,6 +83,8 @@ export class {{className}} {
 
   protected runScenario(): void {
     this.outputLines.set([]);
+    // Line numbering restarts on every run (otherwise the 2nd run starts at 8).
+    this.idCounter = 0;
     this.isRunning.set(true);
     this.pendingMacrotasks = 0;
     console.log('[event-loop] Running scenario');
@@ -110,8 +112,12 @@ export class {{className}} {
       this.appendLine('queueMicrotask (microtask)', 'microtask');
     });
 
-    // Enqueue extras before sync 2 runs, so their macrotasks fire after the
-    // built-in timeout but their microtasks drain before it.
+    this.appendLine('sync 2', 'sync');
+
+    // Extras are appended to the END of the script (after `sync 2`), matching
+    // what the builder UI implies: their sync logs print right after `sync 2`,
+    // their microtasks queue behind the built-in ones, and their macrotasks
+    // fire after the built-in timeout.
     for (const task of extras) {
       if (task.kind === 'setTimeout') {
         this.pendingMacrotasks++;
@@ -135,8 +141,6 @@ export class {{className}} {
         this.appendLine(task.label + ' (sync)', 'sync');
       }
     }
-
-    this.appendLine('sync 2', 'sync');
 
     // ── End of synchronous block ──────────────────────────────────────────────
   }

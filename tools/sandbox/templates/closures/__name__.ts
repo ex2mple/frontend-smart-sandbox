@@ -70,6 +70,19 @@ interface TinyStore {
   count(): number;
 }
 
+// Annotation derived from the ACTUAL run results — stays truthful even after
+// the learner edits var→let (or vice versa) in the builders above.
+function describeCapture(results: number[]): string {
+  if (results.length === 0) return '';
+  return results.every((n) => n === results[0])
+    ? `все вернули ${results[0]} — замкнули одну общую переменную`
+    : 'разные значения — у каждой итерации своя привязка';
+}
+
+function isSharedBinding(results: number[]): boolean {
+  return results.length > 0 && results.every((n) => n === results[0]);
+}
+
 const cartStore: TinyStore = (() => {
   // `items` is private — no code outside the IIFE can touch it directly.
   const items: Array<{ item: string; price: number }> = [];
@@ -119,6 +132,12 @@ export class {{className}} {
     this.letResults().length ? this.letResults().join(', ') : '—'
   );
 
+  // Notes and colors are computed from the real output, not hardcoded.
+  readonly varResultsNote = computed(() => describeCapture(this.varResults()));
+  readonly letResultsNote = computed(() => describeCapture(this.letResults()));
+  readonly varShared = computed(() => isSharedBinding(this.varResults()));
+  readonly letShared = computed(() => isSharedBinding(this.letResults()));
+
   runVarCapture(): void {
     const results = this.varFns.map(fn => fn());
     this.varResults.set(results);
@@ -157,5 +176,21 @@ export class {{className}} {
     this.storeCount.set(cartStore.count());
     this.newItem.set('');
     this.newPrice.set(0);
+  }
+
+  readonly outsideAccessResult = signal<string | null>(null);
+
+  // Real check (not a claim): the object returned by the IIFE has no `items`
+  // property — the array lives only in the closure. Note: `cartStore` itself is
+  // module-scoped, so it is NOT reachable from the browser console at all;
+  // that's why this experiment is a button instead of a console instruction.
+  tryReadItemsOutside(): void {
+    const value = (cartStore as unknown as Record<string, unknown>)['items'];
+    console.log('[cartStore] попытка прочитать items снаружи →', value);
+    this.outsideAccessResult.set(
+      value === undefined
+        ? 'cartStore.items === undefined — снаружи видно только публичное API (add, total, count)'
+        : `cartStore.items = ${JSON.stringify(value)} — приватность нарушена!`
+    );
   }
 }
