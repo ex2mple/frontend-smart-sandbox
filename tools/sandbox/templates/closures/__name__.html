@@ -3,41 +3,35 @@
     <h1>{{title}}</h1>
     <p class="page-subtitle">
       Функция <em>захватывает</em> переменные своей области видимости — это и есть замыкание.
+      Ниже — не абстракция, а настоящий механизм: каждое замыкание держит ссылку на
+      <strong>запись окружения</strong> (environment record), где живёт захваченная переменная.
     </p>
   </header>
 
   <!-- ══════════════════════════════════════════════════════════════════
-       Demo 1 — makeCounter factory
+       Demo 1 — makeCounter factory: независимые записи окружения
        ═══════════════════════════════════════════════════════════════ -->
   <section class="demo-section" aria-labelledby="demo1-heading">
     <h2 id="demo1-heading" class="demo-heading">
-      1 — Фабрика счётчиков (<code>makeCounter</code>)
+      1 — Фабрика счётчиков (<code>makeCounter</code>): отдельные записи
     </h2>
     <p class="demo-desc">
-      Каждый вызов <code>makeCounter()</code> создаёт <strong>независимую</strong> переменную
-      <code>count</code>. Кнопки <em>Alpha</em>, <em>Beta</em> и <em>Gamma</em> меняют
-      только свой собственный счётчик.
+      Каждый вызов <code>makeCounter()</code> создаёт <strong>независимую</strong> запись
+      окружения с переменной <code>count</code>. Кнопки <em>Alpha</em> и <em>Beta</em>
+      меняют только свою собственную запись — вторая её не видит.
     </p>
 
-    <div class="code-snippet" role="img" aria-label="Пример кода makeCounter">
-      <pre><code>function makeCounter(label, start = 0) {{'{'}}
-  let count = start;           // приватная переменная
-  return {{'{'}}
-    inc() {{'{'}} count++; {{'}'}},
-    dec() {{'{'}} count--; {{'}'}},
-    get() {{'{'}} return count; {{'}'}}
-  {{'}'}}; // count недоступна снаружи!
-{{'}'}}</code></pre>
+    <div class="code-snippet">
+      <pre tabindex="0"><code>{{ demo1CodeSample }}</code></pre>
     </div>
 
-    <div class="counter-cards">
+    <div class="cl-env-boxes" role="group" aria-label="Записи окружения счётчиков">
       @for (counter of counters; track counter.label) {
-        <article class="card counter-card" [attr.aria-label]="counter.label + ' counter'">
-          <h3 class="card-label">{{ counter.label }}</h3>
-          <output class="counter-value" [attr.aria-live]="'polite'">
-            {{ counter.value() }}
-          </output>
-          <div class="counter-buttons">
+        <article class="cl-env-box" [attr.aria-label]="'запись ' + counter.label">
+          <h3 class="cl-env-title">запись {{ counter.label }}</h3>
+          <p class="cl-env-fields">{{ counter.recordText() }}</p>
+          <p class="cl-env-captors">захвачена: inc, dec, get (только эти три функции)</p>
+          <div class="cl-env-buttons">
             <button
               type="button"
               class="btn btn-secondary"
@@ -51,91 +45,91 @@
               (click)="counter.inc()"
             >+</button>
           </div>
-          <p class="card-note">
-            Приватный <code>count</code>: доступен только через <code>.get()</code>
-          </p>
         </article>
       }
     </div>
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════════
-       Demo 2 — Loop capture var vs let
+       Demo 2 — var vs let loop capture + setTimeout: реальный прогон, реплей
        ═══════════════════════════════════════════════════════════════ -->
   <section class="demo-section" aria-labelledby="demo2-heading">
     <h2 id="demo2-heading" class="demo-heading">
-      2 — Захват в цикле: <code>var</code> vs <code>let</code>
+      2 — Захват в цикле: <code>var</code> vs <code>let</code> + <code>setTimeout</code>
     </h2>
     <p class="demo-desc">
-      <code>var</code> функционально-скопированный — все замыкания делят
-      <strong>одну</strong> переменную. <code>let</code> блочно-скопированный —
-      каждая итерация получает <strong>свой</strong> снимок.
+      Сначала предскажи ответ в карточке, потом нажми <strong>Запустить</strong> — цикл и
+      три настоящих <code>setTimeout</code> выполнятся по-настоящему и запишутся. Затем
+      проиграй запись по шагам и смотри, какая запись окружения появляется, мутирует или
+      читается на каждом шаге.
     </p>
 
-    <div class="loop-demos">
-      <!-- var side -->
-      <article class="card loop-card" aria-labelledby="var-heading">
-        <h3 id="var-heading">
-          <code>var i</code> — общая привязка
-        </h3>
-        <div class="code-snippet" role="img" aria-label="Пример цикла с var">
-          <pre><code>for (var i = 0; i &lt; 3; i++) {{'{'}}
-  fns.push(() => i);
-{{'}'}}
-// var: все стрелки замкнули ОДНУ переменную i</code></pre>
-        </div>
-        <button
-          type="button"
-          class="btn btn-primary"
-          (click)="runVarCapture()"
-          aria-controls="var-output"
-        >Запустить var-функции</button>
-        <output id="var-output" class="loop-output" aria-live="polite">
-          @if (varResults().length) {
-            <span class="result-label">Результат:</span>
-            <span
-              class="result-value"
-              [class.warn]="varShared()"
-              [class.success]="!varShared()"
-            >{{ varResultsText() }}</span>
-            <span class="result-note">({{ varResultsNote() }})</span>
-          } @else {
-            <span class="result-placeholder">— нажмите кнопку —</span>
-          }
-        </output>
-      </article>
+    <div class="code-snippet">
+      <pre tabindex="0"><code>{{ demo2CodeSample }}</code></pre>
+    </div>
 
-      <!-- let side -->
-      <article class="card loop-card" aria-labelledby="let-heading">
-        <h3 id="let-heading">
-          <code>let i</code> — независимые снимки
-        </h3>
-        <div class="code-snippet" role="img" aria-label="Пример цикла с let">
-          <pre><code>for (let i = 0; i &lt; 3; i++) {{'{'}}
-  fns.push(() => i);
-{{'}'}}
-// Каждая функция помнит свой i</code></pre>
-        </div>
-        <button
-          type="button"
-          class="btn btn-primary"
-          (click)="runLetCapture()"
-          aria-controls="let-output"
-        >Запустить let-функции</button>
-        <output id="let-output" class="loop-output" aria-live="polite">
-          @if (letResults().length) {
-            <span class="result-label">Результат:</span>
-            <span
-              class="result-value"
-              [class.warn]="letShared()"
-              [class.success]="!letShared()"
-            >{{ letResultsText() }}</span>
-            <span class="result-note">({{ letResultsNote() }})</span>
-          } @else {
-            <span class="result-placeholder">— нажмите кнопку —</span>
-          }
-        </output>
-      </article>
+    <section class="cl-predict" aria-label="Предсказание">
+      <sb-experiment-card
+        [question]="cardQuestion"
+        [options]="cardOptions"
+        [actualIndex]="cardActualIndex()"
+        [explanation]="cardExplanation()"
+      />
+    </section>
+
+    <div class="cl-controls" aria-label="Управление запуском">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="runScenario()"
+        [attr.aria-busy]="isRunning()"
+        [attr.aria-disabled]="isRunning() ? 'true' : null"
+      >
+        {{ isRunning() ? 'Выполняется…' : 'Запустить' }}
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="reset()">
+        Сбросить
+      </button>
+      @if (hasReplay()) {
+        <span class="cl-outputs" aria-live="polite" aria-atomic="true">
+          var: {{ varOutputsText() }} · let: {{ letOutputsText() }}
+        </span>
+      }
+    </div>
+
+    <div class="cl-replay" aria-label="Реплей записей окружения">
+      <h3 class="cl-replay-title">Записи окружения на текущем шаге</h3>
+      <div class="cl-env-boxes" role="group" aria-label="Записи окружения на текущем шаге">
+        @for (box of currentState().boxes; track box.id) {
+          <article
+            class="cl-env-box"
+            [class.cl-env-box--active]="box.id === currentState().activeId"
+            [attr.aria-label]="box.title"
+          >
+            @if (box.id === currentState().activeId) {
+              <span class="cl-env-active-badge" aria-hidden="true">↳ читает/пишет</span>
+            }
+            <h3 class="cl-env-title">{{ box.title }}</h3>
+            <p class="cl-env-fields">{{ box.fields }}</p>
+            <p class="cl-env-captors">захвачена: {{ box.capturedBy }}</p>
+          </article>
+        } @empty {
+          <p class="cl-env-empty">Нажми «Запустить» — здесь появятся записи окружения.</p>
+        }
+      </div>
+
+      @if (hasReplay()) {
+        <sb-stepper
+          class="cl-stepper"
+          [steps]="replaySteps()"
+          (positionChange)="stepPosition.set($event)"
+        />
+      } @else {
+        <p class="cl-empty-hint" aria-live="polite">
+          Нажми «Запустить» — появится запись прогона, и записи окружения будут
+          появляться и меняться на каждом шаге.
+        </p>
+      }
     </div>
   </section>
 
@@ -148,36 +142,24 @@
     </h2>
     <p class="demo-desc">
       IIFE создаёт замкнутую область видимости. Приватный массив <code>items</code>
-      недоступен снаружи — только через публичное API (<code>add</code>, <code>total</code>,
-      <code>count</code>).
+      живёт только в записи окружения этого IIFE — снаружи доступно только публичное
+      API (<code>add</code>, <code>total</code>, <code>count</code>).
     </p>
 
-    <div class="code-snippet" role="img" aria-label="Пример модульного паттерна">
-      <pre><code>const cartStore = (() => {{'{'}}
-  const items = [];  // приватно!
-  return {{'{'}}
-    add(item, price) {{'{'}} items.push({{'{'}} item, price {{'}'}}) {{'}'}},
-    total()          {{'{'}} return items.reduce(...) {{'}'}},
-    count()          {{'{'}} return items.length {{'}'}},
-  {{'}'}}; // items недоступен снаружи
-{{'}'}})();</code></pre>
+    <div class="code-snippet">
+      <pre tabindex="0"><code>{{ demo3CodeSample }}</code></pre>
     </div>
+
+    <article class="cl-env-box cl-env-box--module">
+      <h3 class="cl-env-title">запись модуля (IIFE)</h3>
+      <p class="cl-env-fields">{{ moduleRecordFields() }}</p>
+      <p class="cl-env-captors">захвачена: add, total, count (снаружи — только они)</p>
+    </article>
 
     <article class="card module-card">
       <h3 class="card-label">Корзина (cartStore)</h3>
 
-      <div class="module-stats" aria-live="polite">
-        <div class="stat">
-          <span class="stat-label">Товаров:</span>
-          <strong class="stat-value">{{ storeCount() }}</strong>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Итого:</span>
-          <strong class="stat-value">{{ storeTotal() }} ₽</strong>
-        </div>
-      </div>
-
-      <form class="module-form" (ngSubmit)="addToCart()" aria-label="Добавить товар в корзину">
+      <div class="module-form">
         <div class="form-row">
           <label class="form-label" for="item-name">Товар</label>
           <input
@@ -204,12 +186,13 @@
           />
         </div>
         <button
-          type="submit"
+          type="button"
           class="btn btn-primary"
+          (click)="addToCart()"
           [disabled]="addDisabled()"
           [attr.aria-disabled]="addDisabled()"
         >Добавить в корзину</button>
-      </form>
+      </div>
 
       <button
         type="button"
@@ -221,8 +204,8 @@
         @if (outsideAccessResult(); as accessResult) {
           <code>{{ accessResult }}</code>
         } @else {
-          Приватный массив <code>items</code> живёт только в замыкании —
-          нажми кнопку и проверь реальным кодом.
+          Приватный массив <code>items</code> живёт только в записи окружения этого
+          IIFE — нажми кнопку и проверь реальным кодом.
         }
       </p>
     </article>

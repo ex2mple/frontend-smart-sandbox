@@ -126,101 +126,125 @@
   }
 }
 
-// ── Demo 1: Counter cards ────────────────────────────────────────────────────
+// ── Environment record boxes (shared by demo 1, 2, 3) ───────────────────────
+// Визуализация «записи окружения»: заголовок, значения (готовая строка из TS,
+// см. ICU-ловушку в AGENTS.md), список функций-«владельцев». active = запись,
+// которую текущий шаг реплея читает или пишет.
 
-.counter-cards {
+.cl-env-boxes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: var(--sb-space-4);
 }
 
-.counter-card {
+.cl-env-box {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--sb-space-3);
+  gap: var(--sb-space-2);
+  padding: var(--sb-space-4);
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
+  box-shadow: var(--sb-shadow);
+
+  &--active {
+    border-color: var(--sb-accent);
+    box-shadow: inset 0 0 0 1px var(--sb-accent);
+  }
+
+  &--module {
+    max-width: 320px;
+  }
 }
 
-.counter-value {
+.cl-env-active-badge {
+  align-self: flex-start;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px var(--sb-space-2);
+  border-radius: 999px;
+  background: var(--sb-accent);
+  color: var(--sb-accent-contrast);
+}
+
+.cl-env-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--sb-text);
+}
+
+.cl-env-fields {
+  margin: 0;
   font-family: var(--sb-font-mono);
-  font-size: 2.5rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--sb-accent);
-  min-width: 4ch;
-  text-align: center;
+}
+
+.cl-env-captors {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--sb-text-muted);
+}
+
+.cl-env-buttons {
+  display: flex;
+  gap: var(--sb-space-2);
+  margin-top: var(--sb-space-1);
+}
+
+.cl-env-empty {
+  margin: 0;
+  color: var(--sb-text-muted);
+  font-style: italic;
+}
+
+// ── Demo 2: predict / controls / replay ─────────────────────────────────────
+
+.cl-predict sb-experiment-card {
   display: block;
 }
 
-.counter-buttons {
+.cl-controls {
   display: flex;
-  gap: var(--sb-space-2);
+  align-items: center;
+  gap: var(--sb-space-3);
+  flex-wrap: wrap;
 }
 
-// ── Demo 2: Loop cards ───────────────────────────────────────────────────────
-
-.loop-demos {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--sb-space-4);
+.cl-outputs {
+  font-size: 0.85rem;
+  font-family: var(--sb-font-mono);
+  color: var(--sb-text-muted);
 }
 
-.loop-card {
+.cl-replay {
   display: flex;
   flex-direction: column;
-  gap: var(--sb-space-3);
-
-  h3 {
-    margin: 0;
-    font-size: 0.95rem;
-    color: var(--sb-text);
-
-    code {
-      font-family: var(--sb-font-mono);
-      background: var(--sb-surface-2);
-      border-radius: var(--sb-radius-sm);
-      padding: 0.1em 0.3em;
-    }
-  }
+  gap: var(--sb-space-4);
+  padding: var(--sb-space-6);
+  background: var(--sb-surface-2);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
 }
 
-.loop-output {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--sb-space-1) var(--sb-space-2);
-  min-height: 2.4rem;
-  font-size: 0.875rem;
-}
-
-.result-label {
-  color: var(--sb-text-muted);
-}
-
-.result-value {
-  font-family: var(--sb-font-mono);
-  font-weight: 700;
+.cl-replay-title {
+  margin: 0;
   font-size: 1rem;
-
-  &.warn {
-    color: var(--sb-warn);
-  }
-
-  &.success {
-    color: var(--sb-success);
-  }
+  font-weight: 700;
+  color: var(--sb-text);
 }
 
-.result-note {
-  color: var(--sb-text-muted);
-  font-style: italic;
-
-  em {
-    font-style: normal;
-    font-weight: 600;
-  }
+.cl-stepper {
+  margin-top: var(--sb-space-2);
 }
 
-.result-placeholder {
+.cl-empty-hint {
+  margin: 0;
   color: var(--sb-text-muted);
   font-style: italic;
 }
@@ -232,30 +256,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--sb-space-4);
-}
-
-.module-stats {
-  display: flex;
-  gap: var(--sb-space-6);
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sb-space-1);
-}
-
-.stat-label {
-  font-size: 0.8rem;
-  color: var(--sb-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.stat-value {
-  font-family: var(--sb-font-mono);
-  font-size: 1.5rem;
-  color: var(--sb-accent);
 }
 
 .module-form {
