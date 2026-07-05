@@ -10,7 +10,8 @@
     "test": "ng test",
     "sandbox:server": "node tools/sandbox/server.mjs",
     "test:codegen": "vitest run tools/sandbox",
-    "test:devtools": "vitest run src/app/sandboxes/devtools"
+    "test:devtools": "vitest run src/app/sandboxes/devtools",
+    "test:shared": "ng test --watch=false --include 'src/app/sandboxes/shared/**/*.spec.ts'"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
