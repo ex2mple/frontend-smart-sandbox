@@ -4,73 +4,105 @@
   <header class="tb-header">
     <h1>{{title}}</h1>
     <p class="tb-subtitle">
-      Значение <code>this</code> определяется <strong>местом вызова</strong>, а не местом определения функции.
-      ES-модули работают в strict mode: отвязанная функция получает <code>undefined</code>, а не <code>window</code>.
+      Значение <code>this</code> определяется <strong>местом вызова</strong>, а не местом определения функции —
+      и разные способы вызова конкурируют по приоритету. Сначала предскажи ответ в карточке, потом нажми
+      <strong>Запустить</strong> — все 9 вызовов выполнятся по-настоящему и запишутся. Затем проиграй запись по
+      шагам и смотри, какое правило побеждает на каждом.
     </p>
   </header>
 
-  <!-- Run-all button -->
-  <section class="tb-controls" aria-label="Управление">
-    <button type="button" class="sb-btn sb-btn--primary" (click)="runAll()">
-      Запустить все
-    </button>
-    <span class="tb-hint" aria-live="polite">
-      Нажмите «Run» у каждой строки или «Запустить все» сразу.
-      Результаты также выводятся в консоль.
-    </span>
+  <!-- Scenario source -->
+  <section class="tb-scenario" aria-label="Код сценария">
+    <h2 class="tb-section-title">Сценарий (реальный код)</h2>
+    <pre class="tb-code" tabindex="0"><code>{{ scenarioCode }}</code></pre>
   </section>
 
-  <!-- Table -->
-  <section class="tb-table-wrap" aria-label="Таблица call site → this">
-    <table class="tb-table">
-      <thead>
-        <tr>
-          <th scope="col" class="col-num">#</th>
-          <th scope="col" class="col-code">Call site</th>
-          <th scope="col" class="col-expl">Пояснение</th>
-          <th scope="col" class="col-result">this =</th>
-          <th scope="col" class="col-run">Запуск</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of rows(); track row.id) {
-          <tr [class.tb-row--done]="row.result !== null">
-            <td class="col-num" aria-label="Строка {{ row.id }}">{{ row.id }}</td>
-            <td class="col-code">
-              <code class="tb-snippet">{{ row.callSite }}</code>
-            </td>
-            <td class="col-expl">{{ row.explanation }}</td>
-            <td class="col-result" aria-live="polite" [attr.aria-label]="'this равно ' + (row.result ?? 'ещё не запущено')">
-              @if (row.result !== null) {
-                <span
-                  class="tb-result"
-                  [class.tb-result--obj]="row.result.startsWith('obj') && !row.result.includes('other')"
-                  [class.tb-result--undef]="row.result === 'undefined'"
-                  [class.tb-result--other]="row.result.startsWith('obj') && row.result.includes('other')"
-                  [class.tb-result--component]="row.result.startsWith('component')"
-                >{{ row.result }}</span>
-              } @else {
-                <span class="tb-result tb-result--pending" aria-label="Ещё не запущено">—</span>
-              }
-            </td>
-            <td class="col-run">
-              <button
-                type="button"
-                class="sb-btn sb-btn--sm"
-                (click)="runRow(row.id)"
-                [attr.aria-label]="'Запустить строку ' + row.id"
-              >Run</button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+  <!-- Prediction card -->
+  <section class="tb-predict" aria-label="Предсказание">
+    <h2 class="tb-section-title">Предскажи результат</h2>
+    <sb-experiment-card
+      [question]="cardQuestion"
+      [options]="cardOptions"
+      [actualIndex]="cardActualIndex()"
+      [explanation]="cardExplanation"
+    />
+  </section>
+
+  <!-- Run / Reset controls -->
+  <section class="tb-controls" aria-label="Управление запуском">
+    <button
+      type="button"
+      class="sb-btn sb-btn--primary"
+      (click)="runScenario()"
+      [attr.aria-busy]="isRunning()"
+      [attr.aria-disabled]="isRunning() ? 'true' : null"
+    >
+      {{ isRunning() ? 'Выполняется…' : 'Запустить' }}
+    </button>
+    <button type="button" class="sb-btn sb-btn--danger" (click)="reset()">
+      Reset
+    </button>
+    @if (hasReplay()) {
+      <span class="tb-step-count" aria-live="polite" aria-atomic="true">
+        записано шагов: {{ replaySteps().length }}
+      </span>
+    }
+  </section>
+
+  <!-- Live replay: rule ladder driven by the current step's snapshot -->
+  <section class="tb-replay" aria-label="Реплей: лестница правил">
+    <h2 class="tb-section-title">Лестница правил: кто побеждает на этом шаге</h2>
+
+    @if (currentState(); as cs) {
+      <p class="tb-current-case" aria-live="polite">
+        <code>{{ cs.callSite }}</code> → this = <strong>{{ cs.thisValue }}</strong>
+      </p>
+    } @else {
+      <p class="tb-current-case tb-current-case--empty">
+        Нажми Запустить — появится запись прогона, и лестница будет подсвечивать сработавшее правило на каждом шаге.
+      </p>
+    }
+
+    <ol class="tb-rungs" aria-label="Правила по убыванию приоритета">
+      @for (rung of ladderRungs; track rung.key) {
+        <li
+          class="tb-rung"
+          [class.tb-rung--active]="currentState()?.rule === rung.key"
+          [attr.aria-current]="currentState()?.rule === rung.key ? 'step' : null"
+        >
+          <span class="tb-rung-title">{{ rung.title }}</span>
+          <span class="tb-rung-hint">{{ rung.hint }}</span>
+        </li>
+      }
+    </ol>
+
+    <p
+      class="tb-arrow-note"
+      [class.tb-arrow-note--active]="currentState()?.rule === 'arrow'"
+      [attr.aria-current]="currentState()?.rule === 'arrow' ? 'step' : null"
+    >
+      <strong>Вне лестницы — стрелочные функции:</strong>
+      своего <code>this</code> нет, правила выше к ним не применяются — они лексически берут
+      <code>this</code> из места ОПРЕДЕЛЕНИЯ.
+    </p>
+
+    @if (hasReplay()) {
+      <sb-stepper
+        class="tb-stepper"
+        [steps]="replaySteps()"
+        (positionChange)="stepPosition.set($event)"
+      />
+    } @else {
+      <p class="tb-empty-hint" aria-live="polite">
+        Реплей появится после первого запуска.
+      </p>
+    }
   </section>
 
   <!-- Legend -->
-  <aside class="tb-legend" aria-label="Легенда цветов">
-    <h2 class="legend-title">Легенда</h2>
-    <ul class="legend-list">
+  <aside class="tb-legend" aria-label="Легенда результатов">
+    <h2 class="tb-legend-title">Легенда результатов this</h2>
+    <ul class="tb-legend-list" role="list">
       <li>
         <span class="tb-result tb-result--obj" aria-hidden="true">{{ sampleObj }}</span>
         — this === исходный объект (метод вызван через точку)
@@ -80,16 +112,20 @@
         — this === явно переданный объект (call / apply / bind)
       </li>
       <li>
-        <span class="tb-result tb-result--undef" aria-hidden="true">undefined</span>
-        — strict mode: функция без контекста
+        <span class="tb-result tb-result--new" aria-hidden="true">{{ sampleNewInstance }}</span>
+        — this === свежий объект, созданный оператором new
       </li>
       <li>
-        <span class="tb-result tb-result--component" aria-hidden="true">component</span>
+        <span class="tb-result tb-result--undef" aria-hidden="true">undefined</span>
+        — strict mode: функция вызвана без контекста
+      </li>
+      <li>
+        <span class="tb-result tb-result--component" aria-hidden="true">компонент</span>
         — стрелочная функция захватила лексический this
       </li>
     </ul>
-    <p class="legend-note">
-      ES-модули всегда в строгом режиме. В браузерной консоли вне модуля отвязанная функция вернула бы <code>window</code>.
+    <p class="tb-legend-note">
+      ES-модули всегда в строгом режиме. В браузерной консоли вне модуля отвязанная функция вернула бы <code>window</code> вместо <code>undefined</code>.
     </p>
   </aside>
 
