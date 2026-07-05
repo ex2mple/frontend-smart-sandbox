@@ -114,9 +114,38 @@
     margin-left: var(--sb-space-8);
   }
 
-  &--optional {
-    border-left: 4px solid var(--sb-text-muted);
-    background: var(--sb-warn-surface);
+  // ── Статусы обхода (поверх border-left выше) — рамка меняет цвет по шагу. ──
+  transition: box-shadow 0.2s ease-out;
+
+  &--passed {
+    box-shadow: var(--sb-shadow), inset 0 0 0 2px var(--sb-border);
+    opacity: 0.75;
+  }
+
+  &--skipped {
+    box-shadow: var(--sb-shadow), inset 0 0 0 2px var(--sb-text-muted);
+    opacity: 0.6;
+  }
+
+  &--found {
+    box-shadow: var(--sb-shadow), inset 0 0 0 2px var(--sb-success);
+  }
+
+  &--not-found {
+    box-shadow: var(--sb-shadow), inset 0 0 0 2px var(--sb-danger);
+  }
+
+  &--pulse {
+    animation: di-node-pulse 0.5s ease-out;
+  }
+}
+
+@keyframes di-node-pulse {
+  from {
+    box-shadow: var(--sb-shadow), inset 0 0 0 4px var(--sb-accent);
+  }
+  to {
+    box-shadow: var(--sb-shadow), inset 0 0 0 2px var(--sb-accent);
   }
 }
 
@@ -287,6 +316,186 @@
     background: var(--sb-surface-2);
     padding: 0.1em 0.3em;
     border-radius: var(--sb-radius-sm);
+  }
+}
+
+// ─── Section titles (shared by controls/predict/walk sections) ───────────────
+
+.di-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sb-text);
+  margin: 0 0 var(--sb-space-4);
+
+  code {
+    font-family: var(--sb-font-mono);
+    font-size: 0.85em;
+    background: var(--sb-surface-2);
+    padding: 0.1em 0.4em;
+    border-radius: var(--sb-radius-sm);
+  }
+}
+
+.di-controls-section,
+.di-predict,
+.di-run-controls,
+.di-walk {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius);
+  padding: var(--sb-space-6);
+}
+
+.di-run-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sb-space-3);
+  flex-wrap: wrap;
+}
+
+/* Карточка-эксперимент несёт собственную рамку — секция даёт только заголовок. */
+.di-predict sb-experiment-card {
+  display: block;
+}
+
+.di-modifier-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sb-space-2);
+  margin-bottom: var(--sb-space-4);
+}
+
+.di-code {
+  margin: 0;
+  padding: var(--sb-space-4);
+  background: var(--sb-surface-2);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-sm);
+  overflow-x: auto;
+
+  code {
+    font-family: var(--sb-font-mono);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--sb-text);
+    white-space: pre;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--sb-ring);
+  }
+}
+
+.di-step-count {
+  margin-left: auto;
+  font-size: 0.85rem;
+  font-family: var(--sb-font-mono);
+  color: var(--sb-text-muted);
+}
+
+// ─── Status chips (не только цвет несёт смысл — есть текст) ──────────────────
+
+.di-status-chip {
+  display: inline-block;
+  padding: 0.1em 0.6em;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--sb-surface-2);
+  color: var(--sb-text-muted);
+  border: 1px solid var(--sb-border);
+
+  &--passed-empty {
+    color: var(--sb-text-muted);
+  }
+
+  &--skipped {
+    color: var(--sb-text-muted);
+    border-style: dashed;
+  }
+
+  &--found {
+    background: var(--sb-success);
+    color: var(--sb-accent-contrast);
+    border-color: var(--sb-success);
+  }
+
+  &--not-found {
+    background: var(--sb-danger);
+    color: var(--sb-accent-contrast);
+    border-color: var(--sb-danger);
+  }
+}
+
+// ─── Walk replay ───────────────────────────────────────────────────────────────
+
+.di-stepper {
+  margin-top: var(--sb-space-4);
+}
+
+.di-result-banner {
+  margin: 0 0 var(--sb-space-4);
+  font-size: 0.95rem;
+  color: var(--sb-text);
+
+  strong {
+    color: var(--sb-accent);
+  }
+}
+
+.di-empty-hint {
+  margin: 0;
+  color: var(--sb-text-muted);
+  font-style: italic;
+}
+
+// ─── Buttons ────────────────────────────────────────────────────────────────────
+
+.sb-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sb-space-2) var(--sb-space-4);
+  border: none;
+  border-radius: var(--sb-radius-sm);
+  font-family: var(--sb-font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--sb-ring);
+  }
+
+  &--primary {
+    background: var(--sb-accent);
+    color: var(--sb-accent-contrast);
+
+    &:hover { background: var(--sb-accent-hover); }
+
+    &[aria-disabled='true'] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &--secondary {
+    background: var(--sb-surface-2);
+    color: var(--sb-text);
+    border: 1px solid var(--sb-border);
+
+    &:hover { background: var(--sb-surface); }
+  }
+
+  &--danger {
+    background: var(--sb-danger);
+    color: var(--sb-accent-contrast);
+
+    &:hover { background: var(--sb-danger-hover); }
   }
 }
 

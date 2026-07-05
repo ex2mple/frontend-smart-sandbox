@@ -2,10 +2,63 @@
   <header class="di-header">
     <h1>{{title}}</h1>
     <p class="di-subtitle">
-      Иерархия инжекторов Angular: <code>providedIn: 'root'</code> vs локальные
-      провайдеры, <code>@Self</code>, <code>@SkipSelf</code>, <code>@Optional</code>.
+      Сначала предскажи ответ в карточке, потом выбери модификатор запроса
+      Grandchild и нажми <strong>Запустить обход</strong> — обход инжекторов
+      реальный (те же <code>inject()</code>, что и в коде), запишется и
+      проигрывается по шагам поверх дерева.
     </p>
   </header>
+
+  <!-- Modifier picker + scenario snippet -->
+  <section class="di-controls-section" aria-label="Выбор запроса">
+    <h2 class="di-section-title">Запрос Grandchild: <code>inject(…)</code></h2>
+    <div class="di-modifier-btns" role="group" aria-label="Модификатор запроса">
+      @for (opt of modifierOptions; track opt.value) {
+        <button
+          type="button"
+          class="sb-btn sb-btn--secondary"
+          [class.sb-btn--primary]="selectedModifier() === opt.value"
+          [attr.aria-pressed]="selectedModifier() === opt.value"
+          (click)="selectModifier(opt.value)"
+        >
+          {{ opt.label }}
+        </button>
+      }
+    </div>
+    <pre class="di-code" tabindex="0"><code>{{ scenarioSnippet() }}</code></pre>
+  </section>
+
+  <!-- Prediction card -->
+  <section class="di-predict" aria-label="Предсказание">
+    <h2 class="di-section-title">Предскажи результат</h2>
+    <sb-experiment-card
+      [question]="cardQuestion()"
+      [options]="cardOptions"
+      [actualIndex]="cardActualIndex()"
+      [explanation]="cardExplanation()"
+    />
+  </section>
+
+  <!-- Run / Reset controls -->
+  <section class="di-run-controls" aria-label="Управление обходом">
+    <button
+      type="button"
+      class="sb-btn sb-btn--primary"
+      (click)="runWalk()"
+      [attr.aria-busy]="isRunning()"
+      [attr.aria-disabled]="isRunning() ? 'true' : null"
+    >
+      {{ isRunning() ? 'Идёт обход…' : 'Запустить обход' }}
+    </button>
+    <button type="button" class="sb-btn sb-btn--danger" (click)="reset()">
+      Reset
+    </button>
+    @if (hasReplay()) {
+      <span class="di-step-count" aria-live="polite" aria-atomic="true">
+        записано шагов: {{ replaySteps().length }}
+      </span>
+    }
+  </section>
 
   <section class="di-legend" aria-label="Легенда">
     <h2 class="di-legend-title">Легенда</h2>
@@ -22,15 +75,44 @@
         <span class="di-null-badge" aria-label="null">—</span>
         <code>null</code> — провайдер не найден (<code>@Optional</code>)
       </li>
+      <li>
+        <span class="di-status-chip di-status-chip--passed-empty">пропущен (пусто)</span>
+        инжектор проверен во время обхода — провайдера нет
+      </li>
+      <li>
+        <span class="di-status-chip di-status-chip--skipped">пропущен (@SkipSelf)</span>
+        инжектор НЕ проверялся — модификатор пропустил его целиком
+      </li>
+      <li>
+        <span class="di-status-chip di-status-chip--found">найден</span>
+        обход остановился здесь — провайдер нашёлся
+      </li>
+      <li>
+        <span class="di-status-chip di-status-chip--not-found">не найден</span>
+        обход закончился без результата (null / NullInjectorError)
+      </li>
     </ul>
   </section>
 
+  <!-- Injector tree, highlighted by the current step of the walk -->
   <section class="di-tree" aria-label="Дерево инжекторов">
-    <!-- Root node -->
-    <div class="di-node di-node--root" role="region" aria-label="Root node">
+    <div
+      class="di-node di-node--root"
+      [class.di-node--found]="currentState().statuses.root === 'found'"
+      [class.di-node--not-found]="currentState().statuses.root === 'not-found'"
+      [class.di-node--pulse]="currentState().activeNode === 'root'"
+      role="region"
+      aria-label="Root node"
+    >
       <div class="di-node-header">
         <span class="di-badge di-badge--root">providedIn: 'root'</span>
         <span class="di-node-title">Root (AppComponent)</span>
+        @if (statusLabel(currentState().statuses.root)) {
+          <span
+            class="di-status-chip"
+            [class]="'di-status-chip--' + currentState().statuses.root"
+          >{{ statusLabel(currentState().statuses.root) }}</span>
+        }
       </div>
       <dl class="di-facts">
         <div class="di-fact">
@@ -42,14 +124,39 @@
         </div>
       </dl>
 
-      <!-- Branch subtree -->
       <div class="di-children">
-        <di-branch />
+        <di-branch
+          [status]="currentState().statuses.branch"
+          [pulse]="currentState().activeNode === 'branch'"
+          [statusLabel]="statusLabel(currentState().statuses.branch)"
+          [grandchildStatus]="currentState().statuses.grandchild"
+          [grandchildPulse]="currentState().activeNode === 'grandchild'"
+          [grandchildStatusLabel]="statusLabel(currentState().statuses.grandchild)"
+        />
       </div>
     </div>
+  </section>
 
-    <!-- Optional demo (separate subtree, no provider) -->
-    <di-optional-node />
+  <!-- Replay controls -->
+  <section class="di-walk" aria-label="Реплей обхода">
+    <h2 class="di-section-title">Реплей: обход инжекторов</h2>
+    @if (hasReplay()) {
+      @if (currentState().resultLabel) {
+        <p class="di-result-banner" aria-live="polite">
+          Результат: <strong>{{ currentState().resultLabel }}</strong>
+        </p>
+      }
+      <sb-stepper
+        class="di-stepper"
+        [steps]="replaySteps()"
+        (positionChange)="stepPosition.set($event)"
+      />
+    } @else {
+      <p class="di-empty-hint" aria-live="polite">
+        Выбери модификатор и нажми «Запустить обход» — дерево выше начнёт
+        подсвечиваться шаг за шагом.
+      </p>
+    }
   </section>
 
   <section class="di-explainer" aria-label="Пояснения">
@@ -65,7 +172,7 @@
       </div>
       <div class="di-explainer-item">
         <dt><code>@Self</code></dt>
-        <dd>Angular смотрит ТОЛЬКО в инжектор текущего узла. Если провайдера нет — ошибка (или null при <code>@Optional</code>).</dd>
+        <dd>Angular смотрит ТОЛЬКО в инжектор текущего узла и не проверяет родителей вовсе. Если провайдера нет — ошибка (или null при <code>@Optional</code>).</dd>
       </div>
       <div class="di-explainer-item">
         <dt><code>@SkipSelf</code></dt>
@@ -73,7 +180,7 @@
           Пропускает <em>только</em> собственный инжектор узла; дальше — обычный поиск вверх
           по родителям, и выигрывает первый найденный провайдер. Это не «взять у деда»:
           у Branch (свой провайдер есть) skipSelf даёт Root, а у Grandchild (своего провайдера нет)
-          — всё равно экземпляр Branch.
+          — всё равно экземпляр Branch, потому что поиск наверх идёт точно так же, как без модификатора.
         </dd>
       </div>
       <div class="di-explainer-item">
