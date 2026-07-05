@@ -34,15 +34,23 @@ function parseSpider(line: string): StackFrame | null {
 
 // Matched against frame FILE paths only — never against function names, which
 // can legitimately contain these substrings (e.g. a user's `getVendorData`).
-const INTERNAL_RE = /node_modules|zone\.js|polyfills|console-capture|sandbox-log|@angular|vendor/;
+// /main.js covers the Angular/Vite entry bundle where console-capture lives after bundling.
+const INTERNAL_RE = /node_modules|zone\.js|polyfills|console-capture|sandbox-log|@angular|vendor|\/main\.js/;
+
+// Matched against frame FUNCTION names — catches internal helpers even when they
+// share a bundled file path with user code.
+const INTERNAL_FN_RE = /^buildEntry$|^installConsoleCapture$/;
 
 /** Pick the first application frame and format it as a short source label. */
 export function pickSource(frames: StackFrame[]): string {
-  const app = frames.find((f) => f.file && !INTERNAL_RE.test(f.file));
+  const app = frames.find((f) => f.file && !INTERNAL_RE.test(f.file) && !INTERNAL_FN_RE.test(f.fn));
   const f = app ?? frames[0];
   if (!f) return '(unknown)';
   const file = shortFile(f.file);
-  const fn = f.fn && f.fn !== '(anonymous)' && f.fn !== '(unknown)' ? f.fn : '';
+  const fn =
+    f.fn && f.fn !== '(anonymous)' && f.fn !== '(unknown)'
+      ? f.fn.replace(/^_+/, '') // strip esbuild-added leading underscores (_ClassName → ClassName)
+      : '';
   return fn ? `${fn} (${file}:${f.line})` : `${file}:${f.line}`;
 }
 
