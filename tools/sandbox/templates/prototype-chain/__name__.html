@@ -4,38 +4,51 @@
   <header class="pc-header">
     <h1>{{title}}</h1>
     <p class="pc-subtitle">
-      Every object has a hidden <code>[[Prototype]]</code> link.
-      Property access walks <em>up the chain</em> until found — or reaches <code>null</code>.
+      Сначала выбери свойство и предскажи ответ в карточке, потом нажми <strong>Запустить</strong> —
+      обход цепочки выполнится по-настоящему (через <code>Object.getPrototypeOf</code> /
+      <code>Object.getOwnPropertyNames</code>) и запишется. Затем проиграй запись по шагам.
     </p>
   </header>
 
-  <!-- Chain visualizer -->
-  <section class="pc-chain-section" aria-label="Prototype chain">
-    <h2 class="section-title">Chain: rex → dog → animal → Object.prototype → null</h2>
+  <!-- Real code -->
+  <section class="pc-code-section" aria-label="Код цепочки">
+    <h2 class="section-title">Цепочка и обход (реальный код)</h2>
+    <pre class="pc-code" tabindex="0"><code>{{ scenarioCode }}</code></pre>
+  </section>
 
-    <div class="pc-chain" role="list" aria-label="Prototype chain levels">
-      @for (level of chain(); track level.label; let last = $last) {
+  <!-- Chain visualizer: static structure, overlaid with per-step replay status -->
+  <section class="pc-chain-section" aria-label="Цепочка прототипов">
+    <h2 class="section-title">Цепочка: dog → Dog.prototype → Animal.prototype → Object.prototype → null</h2>
+
+    <div class="pc-chain" role="list" aria-label="Уровни цепочки прототипов">
+      @for (level of displayLevels(); track level.label; let i = $index; let last = $last) {
 
         <div
           class="pc-level"
-          [class.pc-level--found]="result().foundAt === level.label"
-          [class.pc-level--null]="level.object === null"
+          [class.pc-level--active]="activeIndex() === i"
+          [class.pc-level--found]="level.status === 'found'"
+          [class.pc-level--miss-final]="level.status === 'miss' && level.label === 'null'"
+          [class.pc-level--null]="level.label === 'null'"
           role="listitem"
-          [attr.aria-label]="level.object !== null
-            ? level.label + ' — own properties: ' + (level.ownProps.length ? level.ownProps.join(', ') : 'none')
-            : 'null — end of chain'"
+          [attr.aria-label]="
+            level.label === 'null'
+              ? 'null — конец цепочки' + (level.status === 'miss' ? ', свойство не найдено' : '')
+              : level.label + ' — собственные свойства: ' +
+                (level.ownProps.length ? level.ownProps.join(', ') : 'нет') +
+                (level.status === 'found' ? ' — здесь найдено' : level.status === 'miss' ? ' — здесь нет' : '')
+          "
         >
           <span class="level-name">{{ level.label }}</span>
 
-          @if (level.object !== null) {
-            <ul class="level-props" aria-label="Own properties of {{ level.label }}">
+          @if (level.label !== 'null') {
+            <ul class="level-props" [attr.aria-label]="'Собственные свойства ' + level.label">
               @if (level.ownProps.length === 0) {
-                <li class="prop-empty">(no own props)</li>
+                <li class="prop-empty">(нет собственных свойств)</li>
               }
               @for (prop of level.ownProps; track prop) {
                 <li
                   class="prop-item"
-                  [class.prop-item--match]="result().foundAt === level.label && query() === prop"
+                  [class.prop-item--match]="level.status === 'found' && prop === selectedProp()"
                 >
                   {{ prop }}
                 </li>
@@ -43,10 +56,11 @@
             </ul>
           }
 
-          @if (result().foundAt === level.label) {
-            <span class="found-badge" role="status" aria-live="polite">
-              found here
-            </span>
+          @if (level.status === 'found') {
+            <span class="found-badge" role="status" aria-live="polite">найдено здесь</span>
+          }
+          @if (level.status === 'miss' && level.label === 'null') {
+            <span class="miss-badge" role="status" aria-live="polite">не найдено</span>
           }
         </div>
 
@@ -57,117 +71,115 @@
     </div>
   </section>
 
-  <!-- Lookup controls -->
-  <section class="pc-lookup-section" aria-label="Property lookup">
-    <h2 class="section-title">Property lookup on <code>rex</code></h2>
-
-    <div class="pc-lookup-form">
-      <label class="lookup-label" for="prop-input">Property name:</label>
-      <div class="lookup-row">
-        <input
-          id="prop-input"
-          class="lookup-input"
-          type="text"
-          [value]="inputValue()"
-          (input)="inputValue.set($any($event.target).value)"
-          (keydown.enter)="lookup()"
-          aria-describedby="lookup-hint"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <button type="button" class="sb-btn" (click)="lookup()">
-          Look up
-        </button>
-      </div>
-      <p id="lookup-hint" class="lookup-hint">
-        Try: name, bark, describe, kind, toString, missingProp — or type anything.
-      </p>
-    </div>
-
-    <!-- Quick suggestions -->
-    <div class="pc-suggestions" role="group" aria-label="Quick suggestions">
-      @for (s of suggestions; track s) {
+  <!-- Property selector + shadowing toggle -->
+  <section class="pc-selector-section" aria-label="Выбор свойства для поиска">
+    <h2 class="section-title">Какое свойство искать?</h2>
+    <div class="pc-prop-btns" role="group" aria-label="Свойства для поиска">
+      @for (prop of propertyOptions; track prop) {
         <button
           type="button"
           class="suggest-btn"
-          [class.suggest-btn--active]="query() === s"
-          (click)="selectSuggestion(s)"
-          [attr.aria-pressed]="query() === s"
+          [class.suggest-btn--active]="selectedProp() === prop"
+          [attr.aria-pressed]="selectedProp() === prop"
+          [disabled]="isRunning()"
+          (click)="selectProperty(prop)"
         >
-          {{ s }}
+          {{ prop }}
         </button>
       }
     </div>
 
-    <!-- Result -->
-    <div class="pc-result" role="status" aria-live="polite" aria-atomic="true">
-      @if (result().foundAt !== null) {
-        <div class="result-found">
-          <span class="result-icon" aria-hidden="true">✓</span>
-          <span>
-            <strong>rex.{{ query() }}</strong> found on
-            <strong class="result-level">{{ result().foundAt }}</strong>
-          </span>
-        </div>
-      } @else {
-        <div class="result-missing">
-          <span class="result-icon" aria-hidden="true">✗</span>
-          <span>
-            <strong>rex.{{ query() }}</strong> — not found anywhere → <code>undefined</code>
-          </span>
-        </div>
-      }
-
-      <!-- Walk trace -->
-      <ol class="result-trace" aria-label="Lookup walk trace">
-        @for (step of result().steps; track $index) {
-          <li [class.trace-found]="step.found" [class.trace-miss]="!step.found">
-            <span class="trace-level">{{ step.label }}</span>
-            <span class="trace-verdict" aria-label="{{ step.found ? 'found' : 'not own' }}">
-              {{ step.found ? '← found' : 'not own' }}
-            </span>
-          </li>
-        }
-      </ol>
-    </div>
-  </section>
-
-  <!-- Shadowing demo -->
-  <section class="pc-shadow-section" aria-label="Shadowing demo">
-    <h2 class="section-title">Shadowing demo</h2>
-    <p class="shadow-desc">
-      When you set an own property on <code>rex</code>, it <strong>shadows</strong>
-      the same-named property further up the chain.
-      Try adding <code>rex.kind</code> and re-running the <code>"kind"</code> lookup.
-    </p>
-
-    <div class="shadow-actions">
+    <div class="pc-shadow-row">
       @if (!shadowed()) {
-        <button type="button" class="sb-btn" (click)="addShadow()">
-          Add own .kind to rex
+        <button
+          type="button"
+          class="sb-btn sb-btn--secondary"
+          [disabled]="isRunning()"
+          (click)="toggleShadow()"
+        >
+          + добавить dog.speak (своё свойство)
         </button>
       } @else {
-        <button type="button" class="sb-btn sb-btn--warn" (click)="resetShadow()">
-          Reset (delete rex.kind)
+        <button
+          type="button"
+          class="sb-btn sb-btn--warn"
+          [disabled]="isRunning()"
+          (click)="toggleShadow()"
+        >
+          Убрать dog.speak (снять затенение)
         </button>
       }
-
       @if (shadowed()) {
         <span class="shadow-note" role="status" aria-live="polite">
-          <code>rex.kind = "good boy"</code> — now shadows <code>animal.kind = "animal"</code>
+          <code>dog.speak</code> — теперь собственное свойство экземпляра, затеняет <code>Animal.prototype.speak</code>
         </span>
       }
     </div>
   </section>
 
+  <!-- Prediction card -->
+  <section class="pc-predict" aria-label="Предсказание">
+    <h2 class="section-title">Предскажи результат</h2>
+    <sb-experiment-card
+      [question]="cardQuestion()"
+      [options]="cardOptions"
+      [actualIndex]="cardActualIndex()"
+      [explanation]="cardExplanation()"
+    />
+  </section>
+
+  <!-- Run / Reset controls -->
+  <section class="pc-controls" aria-label="Управление запуском">
+    <button
+      type="button"
+      class="sb-btn sb-btn--primary"
+      (click)="runLookup()"
+      [attr.aria-busy]="isRunning()"
+      [attr.aria-disabled]="isRunning() ? 'true' : null"
+    >
+      {{ isRunning() ? 'Выполняется…' : 'Запустить' }}
+    </button>
+    <button type="button" class="sb-btn sb-btn--danger" (click)="reset()">
+      Reset
+    </button>
+    @if (hasReplay()) {
+      <span class="pc-step-count" aria-live="polite" aria-atomic="true">
+        записано шагов: {{ replaySteps().length }}
+      </span>
+    }
+  </section>
+
+  <!-- Replay -->
+  <section class="pc-replay" aria-label="Реплей обхода">
+    <h2 class="section-title">Реплей: обход цепочки</h2>
+    <p class="pc-loop-rule">
+      <strong>Правило:</strong> на каждом уровне движок проверяет
+      <code>Object.getOwnPropertyNames</code> — «есть ли здесь СВОЁ свойство?».
+      Если нет — подъём по <em>[[Prototype]]</em> к следующему уровню; если дошли
+      до <code>null</code> — результат <code>undefined</code>.
+    </p>
+    @if (hasReplay()) {
+      <sb-stepper
+        class="pc-stepper"
+        [steps]="replaySteps()"
+        (positionChange)="stepPosition.set($event)"
+      />
+    } @else {
+      <p class="pc-empty-hint" aria-live="polite">
+        Выбери свойство и нажми «Запустить» — появится запись реального обхода,
+        и уровни цепочки выше подсветятся по шагам.
+      </p>
+    }
+  </section>
+
   <!-- Legend -->
-  <aside class="pc-legend" aria-label="Legend">
+  <aside class="pc-legend" aria-label="Легенда">
     <h2 class="legend-title">Как читать диаграмму</h2>
     <ul>
-      <li><strong>Собственные свойства (own props)</strong> — перечислены внутри каждого блока; именно они проверяются при поиске на данном уровне.</li>
-      <li><strong>[[Prototype]] ▼</strong> — внутренняя ссылка, по которой JS переходит вверх, если свойство не найдено.</li>
-      <li><strong>found here</strong> — блок, где поиск остановился; подсвечивается зелёным.</li>
-      <li><strong>Shadowing</strong> — когда собственное свойство есть на нижнем уровне, поиск туда доходит раньше и никогда не видит одноимённое свойство выше.</li>
+      <li><strong>Собственные свойства (own props)</strong> — перечислены внутри каждого блока; именно они проверяются функцией <code>Object.getOwnPropertyNames</code> на данном уровне.</li>
+      <li><strong>[[Prototype]] ▼</strong> — внутренняя ссылка, по которой движок переходит выше, если свойство не найдено собственным.</li>
+      <li><strong>check</strong> — на этом уровне своего свойства не было, переход выше; <strong>found</strong> — уровень, где поиск остановился; <strong>miss</strong> — цепочка кончилась на <code>null</code>, результат <code>undefined</code>.</li>
+      <li><strong>Shadowing (затенение)</strong> — если у нижнего уровня появляется собственное свойство с тем же именем, поиск останавливается там и никогда не видит одноимённое свойство выше.</li>
     </ul>
   </aside>
 
