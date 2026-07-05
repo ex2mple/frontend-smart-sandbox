@@ -4,22 +4,31 @@
   <header class="cd-header">
     <h1>{{title}}</h1>
     <p class="cd-subtitle">
-      Каждая карточка показывает, сколько раз Angular реально
-      <em>выполнил её шаблон</em> (dirty-check).
-      При каждой проверке карточка <span class="flash-pill" aria-hidden="true">вспыхивает</span>.
+      Сначала предскажи ответ в карточке, потом нажми кнопку-триггер — сработает
+      НАСТОЯЩИЙ CD-проход. Каждая карточка в дереве честно фиксирует, проверил ли
+      её Angular (dirty-check) и почему. Затем проиграй запись по шагам.
     </p>
   </header>
 
-  <!-- Controls -->
-  <section class="cd-controls" aria-label="Trigger controls">
-    <button type="button" class="sb-btn" (click)="localEvent()">
-      Local event
+  <!-- Trigger controls -->
+  <section class="cd-controls" aria-label="Триггеры CD-прохода">
+    <button type="button" class="sb-btn" (click)="triggerRootEvent()">
+      Клик снаружи (root-событие)
     </button>
-    <button type="button" class="sb-btn" (click)="asyncUpdate()">
-      setTimeout → signal.set (500 ms)
+    <button type="button" class="sb-btn" (click)="updateSharedInput()">
+      Изменить sharedInput
     </button>
-    <button type="button" class="sb-btn" (click)="setSignalInput()">
-      Set signal input
+    <button
+      type="button"
+      class="sb-btn"
+      (click)="asyncUpdate()"
+      [attr.aria-busy]="asyncPending()"
+      [attr.aria-disabled]="asyncPending() ? 'true' : null"
+    >
+      {{ asyncPending() ? 'ждём 500 мс…' : 'setTimeout → signal (500 мс)' }}
+    </button>
+    <button type="button" class="sb-btn sb-btn--danger" (click)="reset()">
+      Reset
     </button>
 
     <div class="cd-counters" aria-live="polite" aria-atomic="true">
@@ -28,8 +37,36 @@
     </div>
   </section>
 
+  <!-- Anti-pattern: plain mutation -->
+  <section class="cd-plain" aria-label="Анти-паттерн: мутация без сигнала">
+    <h2 class="cd-section-title">Ловушка: мутация без signal</h2>
+    <p class="cd-plain-hint">
+      Кнопка меняет обычное поле класса (не signal). Angular ничего об этом не
+      узнаёт — ни один CD-проход не планируется. Значение изменится «под капотом»
+      незаметно; на экране оно обновится только тогда, когда какой-то ДРУГОЙ
+      триггер выше вызовет реальный проход.
+    </p>
+    <div class="cd-plain-row">
+      <button type="button" class="sb-btn sb-btn--secondary" (click)="mutatePlainField()">
+        Мутировать поле напрямую (без signal)
+      </button>
+      <span class="cd-plain-value">внутреннее значение сейчас: {{ plainMutations }}</span>
+    </div>
+  </section>
+
+  <!-- Prediction card -->
+  <section class="cd-predict" aria-label="Предсказание">
+    <h2 class="cd-section-title">Предскажи результат</h2>
+    <sb-experiment-card
+      [question]="cardQuestion"
+      [options]="cardOptions"
+      [actualIndex]="cardActualIndex()"
+      [explanation]="cardExplanation()"
+    />
+  </section>
+
   <!-- Tree -->
-  <section class="cd-tree" aria-label="Component tree">
+  <section class="cd-tree" aria-label="Дерево компонентов">
 
     <!-- Default subtree -->
     <div class="cd-subtree">
@@ -42,8 +79,17 @@
         независимо от изменения inputs.
       </p>
       <div class="cd-nodes">
-        @for (node of defaultNodes(); track node.label) {
-          <cd-node-default [label]="node.label" [value]="node.value" />
+        @for (node of defaultNodes(); track node.id) {
+          <cd-node-default
+            [id]="node.id"
+            [label]="node.label"
+            [value]="node.value"
+            [count]="node.count"
+            [flashing]="node.flashing"
+            [replayStatus]="hasReplay() ? (nodeStatuses().get(node.id)?.status ?? null) : null"
+            (checked)="onNodeChecked($event)"
+            (ownClick)="onNodeOwnClick($event)"
+          />
         }
       </div>
     </div>
@@ -59,22 +105,56 @@
         внутри компонента сработал signal / событие.
       </p>
       <div class="cd-nodes">
-        @for (node of onpushNodes(); track node.label) {
-          <cd-node-onpush [label]="node.label" [value]="node.value" />
+        @for (node of onpushNodes(); track node.id) {
+          <cd-node-onpush
+            [id]="node.id"
+            [label]="node.label"
+            [value]="node.value"
+            [count]="node.count"
+            [flashing]="node.flashing"
+            [replayStatus]="hasReplay() ? (nodeStatuses().get(node.id)?.status ?? null) : null"
+            (checked)="onNodeChecked($event)"
+            (ownClick)="onNodeOwnClick($event)"
+          />
         }
       </div>
     </div>
 
   </section>
 
+  <!-- Replay: CD pass log -->
+  <section class="cd-replay" aria-label="Реплей CD-прохода">
+    <h2 class="cd-section-title">Реплей: лог CD-прохода</h2>
+    @if (hasReplay()) {
+      <p class="cd-replay-action" aria-live="polite">
+        Проход: <strong>{{ currentActionLabel() }}</strong>
+      </p>
+      <p class="cd-replay-rule">
+        Зелёная рамка на карточке = <strong>checked</strong> (Angular реально выполнил её шаблон);
+        серая приглушённая = <strong>skipped</strong> (пропущена, с причиной в шаге ниже).
+      </p>
+      <sb-stepper
+        class="cd-stepper"
+        [steps]="replaySteps()"
+        (positionChange)="stepPosition.set($event)"
+      />
+    } @else {
+      <p class="cd-empty-hint" aria-live="polite">
+        Нажми любую кнопку-триггер выше или кнопку «Клик внутри карточки» — появится
+        запись CD-прохода, и карточки дерева подсветятся по шагам.
+      </p>
+    }
+  </section>
+
   <!-- Legend -->
   <aside class="cd-legend" aria-label="Legend">
-    <h2 class="legend-title">Как читать счётчики</h2>
+    <h2 class="legend-title">Как это работает</h2>
     <ul>
-      <li><strong>checked N times</strong> — сколько раз Angular реально выполнил шаблон компонента (dirty-check). Счётчик пишется в signal после прохода (через микротаск), и перерисовки от самого счётчика не учитываются.</li>
-      <li><strong>Local event</strong> — обновляет родительский signal; CD-проход доходит до родителя, Default-узлы перепроверяются, а OnPush-узлы пропускаются: их inputs не изменились.</li>
-      <li><strong>setTimeout → signal.set</strong> — приложение zoneless, поэтому сам по себе <code>setTimeout</code> CD не запускает. Через 500 мс колбэк пишет в signal — именно эта запись планирует CD-проход. Если бы колбэк менял обычное поле, ничего бы не перерисовалось.</li>
-      <li><strong>Set signal input</strong> — меняет <code>sharedInput</code>, переданный как input() в оба поддерева; OnPush-узлы перепроверяются, потому что изменился их input.</li>
+      <li><strong>checked N times</strong> — сколько раз Angular реально выполнил шаблон карточки за сессию (dirty-check). Считает родитель внутри окна одного CD-прохода и присылает готовое число карточке через input — сама карточка счётчик не ведёт.</li>
+      <li><strong>Клик снаружи</strong> — обновляет родительский signal вне карточек; проход доходит до Default-узлов (проверяются всегда) и до OnPush-узлов (их inputs не менялись — пропускаются).</li>
+      <li><strong>Изменить sharedInput</strong> — меняет input(), переданный в обе группы карточек; OnPush-узлы теперь тоже проверяются, потому что изменился их input.</li>
+      <li><strong>setTimeout → signal</strong> — приложение zoneless, сам таймер CD не запускает. Через 500 мс колбэк пишет в signal — именно эта запись планирует проход.</li>
+      <li><strong>Клик внутри карточки</strong> — кнопка ВНУТРИ OnPush-узла пишет в его собственный signal → компонент сам помечает себя dirty. Соседняя OnPush-карточка при этом не меняется и остаётся skipped.</li>
     </ul>
   </aside>
 
