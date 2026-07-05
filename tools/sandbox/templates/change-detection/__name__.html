@@ -4,8 +4,9 @@
   <header class="cd-header">
     <h1>{{title}}</h1>
     <p class="cd-subtitle">
-      Each card shows how many times Angular <em>dirty-checked</em> it.
-      A card <span class="flash-pill" aria-hidden="true">flashes</span> on every check.
+      Каждая карточка показывает, сколько раз Angular реально
+      <em>выполнил её шаблон</em> (dirty-check).
+      При каждой проверке карточка <span class="flash-pill" aria-hidden="true">вспыхивает</span>.
     </p>
   </header>
 
@@ -15,7 +16,7 @@
       Local event
     </button>
     <button type="button" class="sb-btn" (click)="asyncUpdate()">
-      setTimeout (500 ms)
+      setTimeout → signal.set (500 ms)
     </button>
     <button type="button" class="sb-btn" (click)="setSignalInput()">
       Set signal input
@@ -37,7 +38,8 @@
         ChangeDetectionStrategy.Default
       </h2>
       <p class="subtree-desc">
-        Re-checked on <strong>every</strong> CD pass, regardless of input changes.
+        Перепроверяется на <strong>каждом</strong> CD-проходе, дошедшем до него,
+        независимо от изменения inputs.
       </p>
       <div class="cd-nodes">
         @for (node of defaultNodes(); track node.label) {
@@ -53,8 +55,8 @@
         ChangeDetectionStrategy.OnPush
       </h2>
       <p class="subtree-desc">
-        Re-checked only when an <strong>input reference changes</strong> or
-        a signal/event inside the component fires.
+        Перепроверяется только когда <strong>изменился input</strong> или
+        внутри компонента сработал signal / событие.
       </p>
       <div class="cd-nodes">
         @for (node of onpushNodes(); track node.label) {
@@ -69,10 +71,10 @@
   <aside class="cd-legend" aria-label="Legend">
     <h2 class="legend-title">Как читать счётчики</h2>
     <ul>
-      <li><strong>checked N times</strong> — сколько раз Angular вызвал шаблон компонента (dirty-check).</li>
-      <li><strong>Local event</strong> — обновляет родительский signal; оба поддерева получают CD-проход, но OnPush-узлы проверяются только если их inputs изменились.</li>
-      <li><strong>setTimeout</strong> — макро-задача тоже запускает CD-проход (zone.js или явный markForCheck).</li>
-      <li><strong>Set signal input</strong> — меняет <code>sharedInput</code>, переданный как input() в оба поддерева; OnPush-узлы тоже перепроверяются.</li>
+      <li><strong>checked N times</strong> — сколько раз Angular реально выполнил шаблон компонента (dirty-check). Счётчик пишется в signal после прохода (через микротаск), и перерисовки от самого счётчика не учитываются.</li>
+      <li><strong>Local event</strong> — обновляет родительский signal; CD-проход доходит до родителя, Default-узлы перепроверяются, а OnPush-узлы пропускаются: их inputs не изменились.</li>
+      <li><strong>setTimeout → signal.set</strong> — приложение zoneless, поэтому сам по себе <code>setTimeout</code> CD не запускает. Через 500 мс колбэк пишет в signal — именно эта запись планирует CD-проход. Если бы колбэк менял обычное поле, ничего бы не перерисовалось.</li>
+      <li><strong>Set signal input</strong> — меняет <code>sharedInput</code>, переданный как input() в оба поддерева; OnPush-узлы перепроверяются, потому что изменился их input.</li>
     </ul>
   </aside>
 

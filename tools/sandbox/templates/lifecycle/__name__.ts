@@ -28,23 +28,71 @@ export interface LogEvent {
   category: HookCategory;
 }
 
+// Хуки, которые срабатывают на КАЖДОМ проходе change detection.
+// Пачка событий, состоящая только из них, — «settle-проход»: проход,
+// спровоцированный записью самого тайм-лайна в signal, а не действием юзера.
+const CHECK_HOOKS = new Set(['ngDoCheck', 'ngAfterContentChecked', 'ngAfterViewChecked']);
+const MAX_SETTLE_PASSES = 2;
+
 @Injectable({ providedIn: 'root' })
 export class LifecycleBus {
   private readonly _events = signal<LogEvent[]>([]);
   private _seq = 0;
+  private _buffer: Omit<LogEvent, 'seq'>[] = [];
+  private _flushScheduled = false;
+  private _settlePasses = 0;
 
   readonly events = this._events.asReadonly();
 
+  /**
+   * Хуки зовут add() синхронно ПРЯМО ВО ВРЕМЯ change detection.
+   * Приложение zoneless: запись в signal здесь пометила бы родителя грязным
+   * и запланировала новый CD-проход, чьи check-хуки снова вызвали бы add() —
+   * бесконечный цикл. Поэтому события копятся в обычном массиве и
+   * сбрасываются в signal один раз, в микротаске после окончания прохода.
+   */
   add(hook: string, detail: string, category: HookCategory): void {
-    const entry: LogEvent = { seq: ++this._seq, hook, detail, category };
-    this._events.update((list) => [...list, entry]);
-    console.log(`[lifecycle #${entry.seq}] ${hook}${detail ? ' — ' + detail : ''}`);
+    this._buffer.push({ hook, detail, category });
+    if (this._flushScheduled) return;
+    this._flushScheduled = true;
+    queueMicrotask(() => {
+      this._flushScheduled = false;
+      this.flush();
+    });
   }
 
   clear(): void {
+    this._buffer = [];
     this._events.set([]);
     this._seq = 0;
+    // Сама очистка вызовет CD-проход с check-хуками — не показываем их
+    // в пустом тайм-лайне (лимит settle-проходов уже исчерпан).
+    this._settlePasses = MAX_SETTLE_PASSES;
     console.info('[lifecycle] timeline cleared');
+  }
+
+  private flush(): void {
+    const batch = this._buffer;
+    this._buffer = [];
+    if (batch.length === 0) return;
+
+    // Сброс в signal сам вызывает ещё один CD-проход, а значит — ещё одну
+    // пачку check-хуков. Пару таких settle-проходов показываем (они настоящие),
+    // дальше отбрасываем, чтобы тайм-лайн оставался конечным: без записи в
+    // signal нового прохода не будет, и цикл затухает.
+    const settleOnly = batch.every((e) => CHECK_HOOKS.has(e.hook));
+    if (settleOnly) {
+      if (this._settlePasses >= MAX_SETTLE_PASSES) return;
+      this._settlePasses++;
+    } else {
+      this._settlePasses = 0;
+    }
+
+    const entries: LogEvent[] = batch.map((e) => ({ ...e, seq: ++this._seq }));
+    for (const e of entries) {
+      console.log(`[lifecycle #${e.seq}] ${e.hook}${e.detail ? ' — ' + e.detail : ''}`);
+    }
+    this._events.update((list) => [...list, ...entries]);
   }
 }
 
@@ -161,9 +209,5 @@ export class {{className}} {
 
   protected clearTimeline(): void {
     this.bus.clear();
-  }
-
-  protected trackBySeq(_: number, e: LogEvent): number {
-    return e.seq;
   }
 }

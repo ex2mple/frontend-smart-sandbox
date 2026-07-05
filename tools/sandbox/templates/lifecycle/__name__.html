@@ -4,8 +4,8 @@
   <header class="lc-header">
     <h1>{{title}}</h1>
     <p class="lc-subtitle">
-      Mount, unmount, or change the child input to see the exact lifecycle hook
-      firing order in the timeline below.
+      Смонтируй, размонтируй или измени input дочернего компонента — и посмотри
+      точный порядок срабатывания lifecycle-хуков в тайм-лайне ниже.
     </p>
   </header>
 
@@ -74,14 +74,14 @@
   <!-- Timeline -->
   <section class="lc-timeline-section" aria-label="Lifecycle hook timeline">
     <h2 class="lc-timeline-title">
-      Timeline
+      Тайм-лайн
       <span class="lc-timeline-count" aria-live="polite" aria-atomic="true">
-        {{ events().length }} event{{ events().length === 1 ? '' : 's' }}
+        всего: {{ events().length }}
       </span>
     </h2>
 
     @if (events().length === 0) {
-      <p class="lc-empty" role="status">No hooks fired yet — mount the child to start.</p>
+      <p class="lc-empty" role="status">Хуки ещё не срабатывали — смонтируй дочерний компонент.</p>
     } @else {
       <ol class="lc-timeline" aria-label="Hook events in order">
         @for (event of events(); track event.seq) {
