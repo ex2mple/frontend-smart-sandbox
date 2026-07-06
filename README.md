@@ -1,59 +1,81 @@
-# FrontendSmartSandbox
+# Frontend Smart Sandbox
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.14.
+Песочница для быстрой проверки фундаментальных концепций JS/Angular — без создания нового проекта на каждый эксперимент.
 
-## Development server
+[![CI](https://github.com/ex2mple/frontend-smart-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/ex2mple/frontend-smart-sandbox/actions/workflows/ci.yml)
 
-To start a local development server, run:
+## Что это
 
-```bash
-ng serve
-```
+Иногда нужно быстро проверить: как на самом деле работает event loop, замыкание, прототипная цепочка, change detection или DI — без возни с `ng new`, установкой зависимостей и настройкой окружения под конкретный вопрос.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Frontend Smart Sandbox решает это одним кликом: на дашборде запущенного приложения выбираешь шаблон — и через секунду в браузере открывается новый маршрут `/s/<name>` с рабочей песочницей.
 
-## Code scaffolding
+Ключевая идея — песочница создаётся из **настоящих файлов на диске**, а не компилируется в браузере на лету. Это значит настоящее Angular-приложение: реальное дерево внедрения зависимостей, реальный compiler, реальные lifecycle-хуки — поэтому даже тонкие концепты можно проверить честно, а не на упрощённой имитации.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Быстрый старт
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Требуется Node.js 20.19+, 22.12+ или 24+.
 
 ```bash
-ng generate --help
+npm install
+npm start
 ```
 
-## Building
+Откройте `http://localhost:4200` — дальше всё управляется из дашборда в браузере.
 
-To build the project run:
+## Как это работает
+
+Приложение состоит из двух процессов, которые `npm start` поднимает параллельно:
+
+- **`ng serve`** (порт 4200) — обычный dev-сервер Angular с Vite.
+- **companion dev-сервер** `tools/sandbox/server.mjs` (порт 4300) — крошечный Node-сервис на встроенных модулях (`node:http`, `node:fs/promises`, без внешних зависимостей), который по запросу с дашборда генерирует файлы песочницы (`.ts` / `.html` / `.less` / `.routes.ts`) из шаблона и пишет их на диск в `src/app/sandboxes/generated/`.
+
+Дальше в игру вступает обычный Vite HMR: как только новые файлы появились на диске, дев-сервер Angular подхватывает их и подключает маршрут — никакой ручной пересборки. Файл маршрутов `src/app/sandboxes/sandbox.routes.generated.ts` перезаписывается сервером при каждом создании/удалении песочницы; в репозитории он закоммичен пустым (`[]`), чтобы свежий клон собирался без ошибок.
+
+Запросы дашборда к companion-серверу идут через `proxy.conf.json` (`/sandbox-api/*` → `:4300`).
+
+Песочницы бывают трёх видов: пустой шаблон (`blank`) для свободных экспериментов, пример с типовыми Angular-паттернами (`example`), демонстрация маршрутизации между несколькими страницами (`multipage`) — и восемь обучающих визуализаторов ниже.
+
+## Обучающие визуализаторы
+
+Каждый визуализатор построен по **replay-модели**: песочница выполняет настоящий код, каждый шаг реального прогона записывается рекордером, а затем прогон воспроизводится в степпере — пошагово или автоматически — с живой диаграммой состояния. Часть шаблонов дополнительно предлагает карточки-предсказания: сначала выбираешь вариант ответа, затем видишь вердикт, вычисленный из фактического результата настоящего прогона — не из заранее заданного текста.
+
+- **event-loop** — call stack, очередь микротасок и очередь макротасок: почему `Promise.then` всегда обгоняет `setTimeout`.
+- **closures** — как функция «помнит» переменные своей области видимости после завершения внешней функции.
+- **prototype-chain** — как JavaScript ищет свойство вверх по цепочке прототипов.
+- **this-binding** — как значение `this` определяется местом вызова, а не местом объявления функции.
+- **signals** — `signal`, `computed`, `effect`, `untracked` и glitch-free пересчёт зависимостей.
+- **change-detection** — как zoneless-приложение планирует и выполняет обход дерева компонентов при `Default` и `OnPush`.
+- **lifecycle** — порядок хуков жизненного цикла компонента при монтировании, изменении входов и размонтировании.
+- **di-tree** — как `inject()` резолвится вверх по дереву инжекторов и как на это влияют `@Self` / `@SkipSelf` / `@Optional`.
+
+## Тесты
 
 ```bash
-ng build
+npm run test:codegen   # генерация файлов и companion-сервер (tools/sandbox)
+npm run test:devtools  # dev-консоль (src/app/sandboxes/devtools)
+npm run test:shared    # общие learning-примитивы: RunRecorder, sb-stepper, sb-experiment-card
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Структура репозитория
 
-## Running unit tests
+```
+src/app/sandboxes/
+  dashboard/    # экран создания/выбора песочниц
+  shell/        # общий layout запущенной песочницы
+  shared/
+    learning/   # RunRecorder, sb-stepper, sb-experiment-card — общие для всех визуализаторов
+  devtools/     # dev-only оверлей-консоль (перехват console.*)
+  generated/    # песочницы, созданные из шаблонов (git-ignored)
+  saved/        # запиненные песочницы (коммитятся)
+  sandbox.routes.generated.ts  # машинно-перезаписываемый файл маршрутов
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
+tools/sandbox/
+  server.mjs    # companion dev-сервер (порт 4300)
+  codegen.mjs   # рендеринг шаблонов и файла маршрутов
+  templates/    # шаблоны песочниц (blank, example, multipage + 8 визуализаторов)
 ```
 
-## Running end-to-end tests
+## Лицензия
 
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+MIT
