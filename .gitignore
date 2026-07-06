@@ -39,6 +39,11 @@ testem.log
 /typings
 __screenshots__/
 
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env.example
+
 # System files
 .DS_Store
 Thumbs.db
