@@ -338,29 +338,51 @@ async function handleRequest(req, res) {
         return;
       }
 
-      // Create the component directory
-      await fs.mkdir(generatedTarget, { recursive: true });
+      // Create the component directory. Everything from here through
+      // rebuildRoutes() is wrapped so a mid-way failure doesn't leave a
+      // partially-written folder on disk for later scans to trip over.
+      try {
+        await fs.mkdir(generatedTarget, { recursive: true });
 
-      // Render and write template files (recursive — handles subdirectories)
-      const templateDir = path.join(TEMPLATES_DIR, template);
-      const className = kebabToClassName(name);
-      const selector = selectorFor(name);
-      const vars = { name, className, selector, title };
+        // Render and write template files (recursive — handles subdirectories)
+        const templateDir = path.join(TEMPLATES_DIR, template);
+        const className = kebabToClassName(name);
+        const selector = selectorFor(name);
+        const vars = { name, className, selector, title };
 
-      await copyTemplateTree(templateDir, generatedTarget, name, vars);
+        await copyTemplateTree(templateDir, generatedTarget, name, vars);
 
-      // Write meta.json
-      const meta = {
-        name,
-        title,
-        template,
-        kind: 'generated',
-        createdAt: new Date().toISOString(),
-      };
-      await fs.writeFile(path.join(generatedTarget, 'meta.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
+        // Fault-injection hook for verifying the cleanup-on-failure path
+        // (see docs/progress/task-create-cleanup.md). Inert unless the env
+        // var is set, so it's safe to leave in permanently.
+        if (process.env.SANDBOX_FAIL_CREATE === '1') {
+          throw new Error('injected create failure (SANDBOX_FAIL_CREATE)');
+        }
 
-      // Rebuild routes
-      await rebuildRoutes();
+        // Write meta.json
+        const meta = {
+          name,
+          title,
+          template,
+          kind: 'generated',
+          createdAt: new Date().toISOString(),
+        };
+        await fs.writeFile(path.join(generatedTarget, 'meta.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
+
+        // Rebuild routes
+        await rebuildRoutes();
+      } catch (err) {
+        // Best-effort cleanup: routes are only rebuilt on success above, so a
+        // failed create never made it into the routes file — no rebuild
+        // needed here. Rethrow the original error so the outer handler's
+        // 500 response and logging are unaffected.
+        try {
+          await fs.rm(generatedTarget, { recursive: true, force: true });
+        } catch (rmErr) {
+          console.error(`[sandbox-server] Failed to clean up '${generatedTarget}' after create failure:`, rmErr);
+        }
+        throw err;
+      }
 
       json(res, 201, { name, routePath: `/s/${name}` });
       return;
